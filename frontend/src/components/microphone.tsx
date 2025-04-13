@@ -8,36 +8,75 @@ export default function Microphone() {
 
     const audioContextRef = useRef<AudioContext | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
     const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
     useEffect(() => {
         const initMic = async () => {
             try {
-              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-              streamRef.current = stream;
-      
-              const audioContext = new AudioContext();
-              audioContextRef.current = audioContext;
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                streamRef.current = stream;
 
-              if (audioContext.state === "suspended") {
-                await audioContext.resume();
-              }
-      
-              const source = audioContext.createMediaStreamSource(stream);
-              sourceRef.current = source;
-      
-              setIsRecording(true);
-              console.log("Mic access granted");
+                const audioContext = new AudioContext();
+                audioContextRef.current = audioContext;
+
+                if (audioContext.state === "suspended") {
+                    await audioContext.resume();
+                }
+
+                const source = audioContext.createMediaStreamSource(stream);
+                sourceRef.current = source;
+
+                setIsRecording(true);
+                console.log("Mic access granted");
             } catch (err) {
-              console.error("Mic permission denied or error:", err);
+                console.error("Mic permission denied or error:", err);
             }
-          };
-      
-          initMic();
+        };
+
+        initMic();
     }, []);
 
+    const startRecording = () => {
+        const stream = streamRef.current;
+        if (!stream) return;
+
+        const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+
+        recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                sendAudioChunkToBackend(event.data);
+            }
+        };
+
+        recorder.onstop = () => {
+            console.log("Recording stopped.");
+            mediaRecorderRef.current = null;
+        };
+
+        recorder.start(1000); // emit audio every 1 second
+        mediaRecorderRef.current = recorder;
+        setIsRecording(true);
+    };
+    const stopRecording = () => {
+        const recorder = mediaRecorderRef.current;
+        if (recorder && recorder.state !== "inactive") {
+            recorder.stop();
+        }
+        setIsRecording(false);
+    };
+
     const toggleRecording = () => {
-        setIsRecording(!isRecording);
+        if (isRecording) {
+            stopRecording();
+          } else {
+            startRecording();
+          }
+    };
+
+    const sendAudioChunkToBackend = async (audioBlob: Blob) => {
+        console.log("Sending audio chunk to backend..." + audioBlob.size);
     };
 
     return (

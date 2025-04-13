@@ -39,3 +39,6 @@ frontend/.pnpm-debug.log*
 # typescript
 frontend/*.tsbuildinfo
 frontend/next-env.d.ts
+
+backend/resume-agent
+backend/app/__pycache__/
