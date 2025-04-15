@@ -1,17 +1,14 @@
 from flask import Flask
 from flask_cors import CORS
-import whisper
-from app.routes.forecasting import forecast_bp
-from app.routes.region_map import region_map_bp
+from app.routes.transcribe import transcribe_bp
 import logging
+from flask_socketio import SocketIO
 
+socketio = SocketIO(cors_allowed_origins='http://localhost:3000')
 
 def create_app():
     app = Flask(__name__)
-
-    # Load Whisper model once at startup
-    model = whisper.load_model("base")
-
+    
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG,  # Or INFO in production
@@ -19,11 +16,14 @@ def create_app():
     )
     app.logger.setLevel(logging.DEBUG)
 
-    CORS(app, origins=["http://localhost:3000"])
+    CORS(app, origins=["http://localhost:3000"]) 
 
     # Register Blueprints
-    app.register_blueprint(forecast_bp)
-    app.register_blueprint(region_map_bp)
+    app.register_blueprint(transcribe_bp)
 
     # You can add more config, extensions, or error handlers here later
+    from .routes import socket_handlers
+
+    socketio.init_app(app)
+
     return app

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 
+import { io, Socket } from "socket.io-client";
+
 export default function Microphone() {
 
     const [isRecording, setIsRecording] = useState(false);
@@ -11,6 +13,8 @@ export default function Microphone() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
     const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+
+    const socketRef = useRef<Socket | null>(null);
 
     useEffect(() => {
         const initMic = async () => {
@@ -36,6 +40,21 @@ export default function Microphone() {
         };
 
         initMic();
+    }, []);
+
+    useEffect(() =>{
+        const socket = io("http://localhost:5000");
+        socketRef.current = socket;
+
+        socket.on("connect", () => console.log("🔌 Socket connected"));
+        socket.on("transcript", (data) => {
+            console.log("🗣️ Received transcript:", data.text);
+        });
+
+        return () => {
+            socket.disconnect();
+            console.log("❌ Socket disconnected");
+        };
     }, []);
 
     const startRecording = () => {
@@ -76,7 +95,21 @@ export default function Microphone() {
     };
 
     const sendAudioChunkToBackend = async (audioBlob: Blob) => {
-        console.log("Sending audio chunk to backend..." + audioBlob.size);
+        if (!socketRef.current) return;
+
+  try {
+    const arrayBuffer = await audioBlob.arrayBuffer();         // Convert Blob to binary
+    const chunk = new Uint8Array(arrayBuffer);            // Wrap in Uint8Array
+
+    socketRef.current.emit("audio_chunk", {
+      session_id: sessionId,
+      chunk: chunk,
+    });
+
+    console.log(`📤 Sent audio chunk — ${chunk.byteLength} bytes`);
+  } catch (err) {
+    console.error("❌ Failed to send audio chunk:", err);
+
     };
 
     return (

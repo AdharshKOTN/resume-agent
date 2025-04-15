@@ -1,13 +1,14 @@
-from flask import Flask, request, jsonify
-import tempfile
-import os
 from flask import Blueprint, request, jsonify
+import whisper
+
 import logging
 logger = logging.getLogger(__name__)
 
-forecast_bp = Blueprint('forecast', __name__)
+transcribe_bp = Blueprint('transcribe', __name__)
 
-@app.route("/transcribe", methods=["POST"])
+# Load Whisper model once at startup
+model = whisper.load_model("base")
+
 def transcribe():
     try:
         return 'Success', 200
