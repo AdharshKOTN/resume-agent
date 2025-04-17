@@ -24,6 +24,10 @@ export default function Microphone() {
   // Session information
   const [sessionId, setSessionId] = useState<string | null>(null);
 
+
+  // store one long audio chunk to transcribe and pass to the agent
+  const audioChunksRef = useRef<Blob []>([]);
+
   useEffect(() => {
     const initMic = async () => {
       try {
@@ -91,10 +95,14 @@ export default function Microphone() {
       mimeType: "audio/webm",
     });
 
+    recorder.onstart = () => {
+      console.log("Starting the recording...")
+    }
     // recorder behavior set for when data appears and when the recording stops?
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
-        sendAudioChunkToBackend(event.data, id);
+        // sendAudioChunkToBackend(event.data, id);
+        audioChunksRef.current.push(event.data);
       }
     };
 
@@ -111,20 +119,23 @@ export default function Microphone() {
   };
 
   // free up the resources related to the session and recording
-  const stopRecording = () => {
+  const stopRecording = async () => {
     if (
       mediaRecorderRef.current! &&
       mediaRecorderRef.current.state !== "inactive"
     ) {
-      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stop(); // should halt the recording and forward the blob array to the backend
       console.log("Stopping MediaRecorder");
     }
     if (sessionId) {
-      socketRef.current?.emit("end_stream", { session_id: sessionId });
+      const fullBlob = new Blob(audioChunksRef.current, {type: "audio/webm"});
+      const arrayBuffer = await fullBlob.arrayBuffer();
+      socketRef.current?.emit("end_stream", { session_id: sessionId, blob: arrayBuffer });
       console.log(`📤 Sent end_stream for session: ${sessionId}`);
     }
     setIsRecording(false);
     setSessionId(null);
+    audioChunksRef.current = [];
   };
 
   const toggleRecording = () => {
