@@ -5,6 +5,7 @@ import io
 from whisper.audio import load_audio, log_mel_spectrogram
 import whisper
 from whisper import DecodingOptions, decode
+import traceback
 
 import tempfile
 import subprocess
@@ -44,31 +45,42 @@ def handle_end_stream(data):
     # buffer = io.BytesIO(audio_bytes)
 
     try:
-        # 1. Save the raw blob as a .webm temp file
-        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_webm:
+
+        print(type(audio_bytes), len(audio_bytes))
+        print(audio_bytes[:16])
+
+        byte_list = list(audio_bytes[:8])
+        print("🧪 Backend bytes preview:", byte_list)
+        # [ 31, 67, 182, 117, 1, 255, 255, 255 ]
+        # [ 31, 67, 182, 117, 1, 255, 255, 255 ]
+        print("📏 Backend audio_bytes length:", len(audio_bytes))
+
+        # # 1. Save the raw blob as a .webm temp file
+        with tempfile.NamedTemporaryFile(mode="+wb",suffix=".webm", delete=False) as tmp_webm:
             tmp_webm.write(audio_bytes)
             tmp_webm_path = tmp_webm.name
 
-        # 2. Convert .webm to .mp3 using FFmpeg
-        tmp_mp3_path = tmp_webm_path.replace(".webm", ".mp3")
-        subprocess.run([
-            "ffmpeg", "-y", "-i", tmp_webm_path,
-            "-ar", "16000", "-ac", "1", "-b:a", "128k", tmp_mp3_path
-        ], check=True)
+        # # write to real file for testing
+        with open("test.webm", "wb") as f:
+            f.write(audio_bytes)
+        print(f"🟢 Saved temp file: {tmp_webm_path}")
 
         # 3. Transcribe the MP3 with Whisper
-        result = model.transcribe(tmp_mp3_path, language="en", fp16=False)
+        result = model.transcribe(tmp_webm_path, language="en", fp16=False)
         text = result["text"].strip()
 
-        print(f"🧠 Transcribed ({session_id}): {text}")
-        emit("transcript", {"session_id": session_id, "text": text})
+        # result = model.transcribe(audio_bytes, language="en", fp16=False)
+        # text = result["text"].strip()
+
+        # print(f"🧠 Transcribed ({session_id}): {text}")
+        # emit("transcript", {"session_id": session_id, "text": text})
 
     except Exception as e:
-        print(f"❌ Transcription error: {e.with_traceback()}")
+        print(f"❌ Transcription error: {traceback.format_exc()}")
         emit("transcript", {"session_id": session_id, "text": "[ERROR] Unable to transcribe."})
 
-    finally:
-        # 4. Clean up temp files
-        for path in [tmp_webm_path, tmp_mp3_path]:
-            if os.path.exists(path):
-                os.remove(path)
+    # finally:
+    #     # 4. Clean up temp files
+    #     for path in [tmp_webm_path, tmp_mp3_path]:
+    #         if os.path.exists(path):
+    #             os.remove(path)

@@ -11,7 +11,8 @@ def create_app():
     # Setup logging
     logging.basicConfig(
         level=logging.DEBUG,  # Or INFO in production
-        format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        # format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        format='%(asctime)s %(levelname)s: %(message)s'
     )
     app.logger.setLevel(logging.DEBUG)
 
