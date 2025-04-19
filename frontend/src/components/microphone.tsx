@@ -24,7 +24,6 @@ export default function Microphone() {
   // Session information
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-
   // store one long audio chunk to transcribe and pass to the agent
   const audioChunksRef = useRef<Blob []>([]);
 
@@ -83,8 +82,12 @@ export default function Microphone() {
       return;
     }
 
+    audioChunksRef.current = []; // reset the audio chunks array
+    console.log("chunks array reset: " + audioChunksRef.current);
+
     // set new sessionID for each conversation
     const id = uuidv4();
+    console.log("New session ID: " + id);
     setSessionId(id);
 
     // notify backend of new stream
@@ -95,38 +98,82 @@ export default function Microphone() {
       mimeType: "audio/webm;codecs=opus",
     });
 
-    recorder.onstart = () => {
-      console.log("Starting the recording...")
-    }
+    // recorder.onstart = () => {
+    //   console.log("Starting the recording...")
+    // }
+
+    let resolveFinal: () => void;
+
+    const finalChunkPromise = new Promise<void>((res) => {
+      resolveFinal = res;
+    });
+
     // recorder behavior set for when data appears and when the recording stops?
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         // sendAudioChunkToBackend(event.data, id);
         audioChunksRef.current.push(event.data);
       }
+      if (recorder.state === "inactive") {
+        resolveFinal();
+        console.log("Recording stopped, sending final chunk...");
+      }
     };
 
-    recorder.onstop = () => {
+    recorder.onstop = async () => {
       setIsRecording(false);
       console.log("🛑 Recording stopped.");
+
+      await finalChunkPromise; // wait for the final chunk to be processed
+      console.log("Final chunk processed.");
+      console.log("Audio chunks:", audioChunksRef.current);
+      console.log("Audio chunks length:", audioChunksRef.current.length);
+      console.log("Audio chunks size:", audioChunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0));
+      console.log("Audio chunks size (bytes):", audioChunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0));
+      console.log("Audio chunks size (KB):", audioChunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0) / 1024);
+      console.log("Audio chunks size (MB):", audioChunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0) / (1024 * 1024));
+
+      const fullBlob = new Blob(audioChunksRef.current, {type: "audio/webm"});
+      console.log("🎙️ Full Blob:", fullBlob);
+      console.log("📦 Type:", fullBlob.type);
+      console.log("📏 Size:", fullBlob.size);
+
+      if (sessionId) {
+        const arrayBuffer = await fullBlob.arrayBuffer();
+        const uint8 = new Uint8Array(arrayBuffer);
+        console.log("🧪 Uint8 preview:", Array.from(uint8.slice(0, 8)));
+        socketRef.current?.emit("end_stream", { session_id: sessionId, blob: uint8 });
+        console.log(`📤 Sent end_stream for session: ${sessionId}`);
+      }
+  
+      // Playback test
+      const audioURL = URL.createObjectURL(fullBlob);
+      const audio = new Audio(audioURL);
+      // audio.play().then(() => {
+      //     console.log("✅ Audio playback started.");
+      // }).catch((err) => {
+      //     console.error("❌ Audio playback error:", err);
+      // });
+  
+      // Optional: Save for manual inspection
+      const a = document.createElement("a");
+      a.href = audioURL;
+      a.download = "debug_recording.webm";
+      a.click();
+      
+
       mediaRecorderRef.current = null;
     };
 
     // 1 second chunks of audio are emitted
-    recorder.start(1000); // emit audio every 1 second
+    // recorder.start(1000); // emit audio every 1 second
+    recorder.start(); // uninterrupted recording
     mediaRecorderRef.current = recorder;
     setIsRecording(true);
   };
 
   // free up the resources related to the session and recording
   const stopRecording = async () => {
-
-    // Debug: Inspect blob info
-    const fullBlob = new Blob(audioChunksRef.current, {type: "audio/webm"});
-    console.log("🎙️ Full Blob:", fullBlob);
-    console.log("📦 Type:", fullBlob.type);
-    console.log("📏 Size:", fullBlob.size);
-
     if (
         mediaRecorderRef.current! &&
         mediaRecorderRef.current.state !== "inactive"
@@ -134,32 +181,10 @@ export default function Microphone() {
         mediaRecorderRef.current.stop(); // should halt the recording and forward the blob array to the backend
         console.log("Stopping MediaRecorder");
     }
-    if (sessionId) {
-      const arrayBuffer = await fullBlob.arrayBuffer();
-      const uint8 = new Uint8Array(arrayBuffer);
-      console.log("🧪 Uint8 preview:", Array.from(uint8.slice(0, 8)));
-      socketRef.current?.emit("end_stream", { session_id: sessionId, blob: uint8 });
-      console.log(`📤 Sent end_stream for session: ${sessionId}`);
-    }
-
-    // Playback test
-    // const audioURL = URL.createObjectURL(fullBlob);
-    // const audio = new Audio(audioURL);
-    // audio.play().then(() => {
-    //     console.log("✅ Audio playback started.");
-    // }).catch((err) => {
-    //     console.error("❌ Audio playback error:", err);
-    // });
-
-    // Optional: Save for manual inspection
-    // const a = document.createElement("a");
-    // a.href = audioURL;
-    // a.download = "debug_recording.webm";
-    // a.click();
+    
     setIsRecording(false);
     setSessionId(null);
-    audioChunksRef.current = [];
-  };
+    };
 
   const toggleRecording = () => {
     if (isRecording) {

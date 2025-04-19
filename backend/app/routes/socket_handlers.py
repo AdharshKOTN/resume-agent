@@ -69,11 +69,8 @@ def handle_end_stream(data):
         result = model.transcribe(tmp_webm_path, language="en", fp16=False)
         text = result["text"].strip()
 
-        # result = model.transcribe(audio_bytes, language="en", fp16=False)
-        # text = result["text"].strip()
-
-        # print(f"🧠 Transcribed ({session_id}): {text}")
-        # emit("transcript", {"session_id": session_id, "text": text})
+        print(f"🧠 Transcribed ({session_id}): {text}")
+        emit("transcript", {"session_id": session_id, "text": text})
 
     except Exception as e:
         print(f"❌ Transcription error: {traceback.format_exc()}")
