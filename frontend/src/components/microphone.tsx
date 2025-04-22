@@ -6,7 +6,11 @@ import { io, Socket } from "socket.io-client";
 
 import { v4 as uuidv4 } from "uuid";
 
-export default function Microphone() {
+interface MicrophoneProps {
+  onTranscript: (transcript: string) => void;
+}
+
+export default function Microphone({onTranscript}: MicrophoneProps) {
   const [isRecording, setIsRecording] = useState(false);
 
   // refs to store audio context, stream, and source ( get and manipulate audio stream from mic)
@@ -67,6 +71,7 @@ export default function Microphone() {
 
     socket.on("transcript", (data) => {
         console.log("🗣️ Received transcript:", data.text);
+        onTranscript(data.text);
     });
 
     socket.on("disconnect", () => {

@@ -1,39 +1,51 @@
 "use client";
-import React, { useState } from 'react';
+import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
 
-const TranscriptDisplay: React.FC = () => {
-    const [transcripts, setTranscripts] = useState<string[]>([
-        "Welcome to the transcript display!",
-        "This is an example of a transcript.",
-        "The latest transcript will appear at the top.",
-    ]);
+interface TranscriptDisplayProps {
+    transcripts: string[];
+}
 
-    const colors = ["#FF5733", "#33FF57", "#3357FF", "#F3FF33", "#FF33F3"];
+export default function TranscriptDisplay({transcripts}: TranscriptDisplayProps) {
 
     return (
-        <div
-            style={{
-                maxHeight: '300px',
-                overflowY: 'auto',
-                border: '1px solid #ccc',
-                padding: '10px',
-                borderRadius: '5px',
-                backgroundColor: '#f9f9f9',
-            }}
-        >
-            {transcripts.map((transcript, index) => (
-                <p
-                    key={index}
-                    style={{
-                        color: colors[index % colors.length],
-                        margin: '5px 0',
-                    }}
-                >
-                    {transcript}
-                </p>
+        <div className="mt-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[80px]">#</TableHead>
+              <TableHead>Transcript</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {transcripts.map((text, i) => (
+              <TableRow key={i}>
+                <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                <TableCell>{text}</TableCell>
+              </TableRow>
             ))}
-        </div>
+          </TableBody>
+        </Table>
+      </div>
+        //     style={{
+        //         maxHeight: '300px',
+        //         overflowY: 'auto',
+        //         border: '1px solid #ccc',
+        //         padding: '10px',
+        //         borderRadius: '5px',
+        //         backgroundColor: '#f9f9f9',
+        //     }}
+        // > 
+        //     {transcripts.map((transcript, index) => (
+        //         <p
+        //             key={index}
+        //             style={{
+        //                 color: colors[index % colors.length],
+        //                 margin: '5px 0',
+        //             }}
+        //         >
+        //             {transcript}
+        //         </p>
+        //     ))}
+        // </div>
     );
 };
-
-export default TranscriptDisplay;
