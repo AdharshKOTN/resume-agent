@@ -6,7 +6,7 @@ import traceback
 import tempfile
 import os
 
-from ..services.llm.llm import generate_response
+from app.services.llm import generate_response
 
 streamers = {}
 model = whisper.load_model("base")
@@ -48,8 +48,8 @@ def handle_end_stream(data):
 
         # return LLM response
         llm_response = generate_response(text)
-        print(f"🤖 LLM response ({session_id}): {llm_response}")
-        emit("llm_response", {"session_id": session_id, "text": llm_response})
+        print(f"🤖 LLM response ({session_id}): {llm_response}, datatype: {type(llm_response)}")
+        emit("agent_response", {"session_id": session_id, "text": llm_response})
 
     except Exception as e:
         print(f"❌ Transcription error: {traceback.format_exc()}")

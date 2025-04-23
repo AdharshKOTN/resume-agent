@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 
 import { v4 as uuidv4 } from "uuid";
+
+import socket from "@/components/socket";
 
 interface MicrophoneProps {
   onTranscript: (transcript: string) => void;
@@ -64,7 +66,7 @@ export default function Microphone({onTranscript}: MicrophoneProps) {
   // 2. log transcript result
 
   useEffect(() => {
-    const socket = io("http://localhost:5000");
+    // const socket = io("http://localhost:5000");
     socketRef.current = socket;
 
     socket.on("connect", () => console.log("🔌 Socket connected"));

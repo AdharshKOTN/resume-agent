@@ -42,3 +42,6 @@ frontend/next-env.d.ts
 
 backend/resume-agent
 **/__pycache__/
+
+backend/app/personality/memories.json
+LLM-build/Modelfile

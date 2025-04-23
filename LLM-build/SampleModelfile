@@ -1,0 +1,14 @@
+FROM mistral
+
+# Baked-in identity + limits
+SYSTEM "------"
+
+# Fixed, non-variable prompt format
+TEMPLATE """{{ .System }}
+
+User question: {{ .Prompt }}
+
+Adharsh:"""
+
+# Optional: limit creativity
+PARAMETER temperature 0.4

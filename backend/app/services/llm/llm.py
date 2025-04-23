@@ -1,11 +1,13 @@
 import requests
-
+import sys
+from app.personality import build_prompt
 OLLAMA_URL = "http://localhost:11434/api/generate"
+MODEL = "adharsh-mistral"
 
-def generate_response(prompt: str, model: str = "mistral") -> str:
+def generate_response(user_prompt: str) -> str:
     payload = {
-        "model": model,
-        "prompt": prompt,
+        "model": MODEL,
+        "prompt": sanitize_prompt(user_prompt),
         "stream": False
     }
 
@@ -16,3 +18,11 @@ def generate_response(prompt: str, model: str = "mistral") -> str:
     except Exception as e:
         print(f"❌ Ollama error: {e}")
         return "Sorry, I'm having trouble responding right now."
+    
+def sanitize_prompt(user_prompt: str) -> str:
+    # Remove common prompt injection phrases
+    blacklist = ["System:", "Ignore", "Forget previous", "Act as", "###", '"""']
+    for term in blacklist:
+        user_prompt = user_prompt.replace(term, "")
+    prompt = build_prompt(user_prompt.strip())
+    return prompt
