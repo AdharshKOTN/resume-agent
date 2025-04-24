@@ -1,8 +1,7 @@
 import requests
-import sys
 from app.personality import build_prompt
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "adharsh-mistral"
+MODEL = "adharsh-agent"
 
 def generate_response(user_prompt: str) -> str:
     payload = {
@@ -24,5 +23,5 @@ def sanitize_prompt(user_prompt: str) -> str:
     blacklist = ["System:", "Ignore", "Forget previous", "Act as", "###", '"""']
     for term in blacklist:
         user_prompt = user_prompt.replace(term, "")
-    prompt = build_prompt(user_prompt.strip())
-    return prompt
+    # prompt = build_prompt(user_prompt.strip())
+    return user_prompt

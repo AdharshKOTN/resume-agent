@@ -6,6 +6,8 @@ import traceback
 import tempfile
 import os
 
+import time
+
 from app.services.llm import generate_response
 
 streamers = {}
@@ -20,6 +22,8 @@ def handle_start_stream(data):
 def handle_end_stream(data):
     session_id = data["session_id"]
     audio_bytes = data["blob"]
+
+    start = time.time()
 
     try:
         print(type(audio_bytes), len(audio_bytes))
@@ -48,8 +52,10 @@ def handle_end_stream(data):
 
         # return LLM response
         llm_response = generate_response(text)
+        duration = round(time.time() - start, 2)
+        print(f"⏱️ LLM response time: {duration:.2f} seconds")
         print(f"🤖 LLM response ({session_id}): {llm_response}, datatype: {type(llm_response)}")
-        emit("agent_response", {"session_id": session_id, "text": llm_response})
+        emit("agent_response", {"session_id": session_id, "text": llm_response, "duration": duration})
 
     except Exception as e:
         print(f"❌ Transcription error: {traceback.format_exc()}")

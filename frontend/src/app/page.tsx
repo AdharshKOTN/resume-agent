@@ -8,7 +8,7 @@ import {AgentResponse} from "@/components/types"
 
 export default function Home() {
 
-  const [responses, setResponses] = useState<string[]>([]);
+  const [responses, setResponses] = useState<AgentResponse[]>([]);
 
   const [transcripts, setTranscripts] = useState<string[]>([]);
 
@@ -21,7 +21,7 @@ export default function Home() {
   const onAgentResponse = (response: AgentResponse) => {
     console.log("Agent response:", response);
     if(response.text.trim()){
-      setResponses((prevResponses) => [response.text, ...prevResponses]);
+      setResponses((prevResponses) => [response, ...prevResponses]);
     }
   }
 
