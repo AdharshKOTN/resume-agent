@@ -8,10 +8,11 @@ import { v4 as uuidv4 } from "uuid";
 
 import socket from "@/components/socket";
 import { on } from "events";
+import { AudioResponse } from "./types";
 
 interface MicrophoneProps {
   onTranscript: (transcript: string) => void;
-  onAudio: (audio: Blob) => void;
+  onAudio: (audio: AudioResponse) => void;
 }
 
 export default function Microphone({onTranscript, onAudio}: MicrophoneProps) {
