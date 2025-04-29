@@ -45,3 +45,11 @@ backend/resume-agent
 
 backend/app/personality/memories.json
 LLM-build/Modelfile
+
+backend/app/services/voice/checkpoints_1226
+backend/app/services/openvoice
+
+backend/app/services/voice/outputs/test.wav
+backend/app/services/voice/outputs/tmp.wav
+backend/app/services/voice/resources/training-audio-v2.mp3
+backend/app/services/voice/resources/voice-training.mp3

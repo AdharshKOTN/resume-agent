@@ -3,6 +3,12 @@ from flask_cors import CORS
 import logging
 from flask_socketio import SocketIO
 
+# import os
+# import sys
+
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'app')))
+
+
 socketio = SocketIO(cors_allowed_origins='http://localhost:3000')
 
 def create_app():
@@ -18,7 +24,6 @@ def create_app():
 
     CORS(app, origins=["http://localhost:3000"]) 
 
-    # Load configuration
     from .routes import socket_handlers
 
     socketio.init_app(app)

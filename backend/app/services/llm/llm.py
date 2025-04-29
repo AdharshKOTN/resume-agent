@@ -1,7 +1,6 @@
 import requests
-from app.personality import build_prompt
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "adharsh-agent"
+MODEL = "adharsh-tinyllama"
 
 def generate_response(user_prompt: str) -> str:
     payload = {

@@ -4,4 +4,8 @@ type AgentResponse = {
     duration: number;
 }
 
-export type { AgentResponse };
+type AudioResponse = {
+    session_id: string;
+    audio: Blob;
+}
+export type { AgentResponse, AudioResponse};

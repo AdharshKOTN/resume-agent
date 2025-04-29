@@ -9,6 +9,7 @@ import os
 import time
 
 from app.services.llm import generate_response
+from app.services.voice.voice import voice_conversion
 
 streamers = {}
 model = whisper.load_model("base")
@@ -56,6 +57,16 @@ def handle_end_stream(data):
         print(f"⏱️ LLM response time: {duration:.2f} seconds")
         print(f"🤖 LLM response ({session_id}): {llm_response}, datatype: {type(llm_response)}")
         emit("agent_response", {"session_id": session_id, "text": llm_response, "duration": duration})
+
+        # generate voice
+        voice_conversion(llm_response)
+        print(f"Generated voice response for session {session_id}")
+        # send voice response
+        with open("outputs/response.wav", "rb") as f:
+            audio_data = f.read()
+            emit("voice_response", {"session_id": session_id, "audio": audio_data})
+
+
 
     except Exception as e:
         print(f"❌ Transcription error: {traceback.format_exc()}")
