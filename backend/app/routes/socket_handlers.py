@@ -11,6 +11,15 @@ import time
 from app.services.llm import generate_response
 from app.services.voice.voice import voice_conversion
 
+# import sys
+import os
+from pathlib import Path
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+GENERATED_AUD_FILE = BASE_DIR / 'services' / 'voice' / 'outputs' / 'response.wav'
+
 streamers = {}
 model = whisper.load_model("base")
 
@@ -59,14 +68,15 @@ def handle_end_stream(data):
         emit("agent_response", {"session_id": session_id, "text": llm_response, "duration": duration})
 
         # generate voice
+        start = time.time()
         voice_conversion(llm_response)
-        print(f"Generated voice response for session {session_id}")
+        print(f"Generated voice response for session {session_id} in {GENERATED_AUD_FILE}")
+        duration = round(time.time() - start, 2)
         # send voice response
-        with open("outputs/response.wav", "rb") as f:
+        with open(GENERATED_AUD_FILE, "rb") as f:
+            print(f"Sending voice response for session {session_id}")
             audio_data = f.read()
-            emit("voice_response", {"session_id": session_id, "audio": audio_data})
-
-
+            emit("voice_response", {"session_id": session_id, "audio": audio_data, "duration": duration})
 
     except Exception as e:
         print(f"❌ Transcription error: {traceback.format_exc()}")

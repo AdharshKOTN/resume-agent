@@ -11,12 +11,13 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
-CKPT_CONVERTER = BASE_DIR / '..' / '..' / 'services' / 'voice' / 'checkpoints_1226' / 'checkpoints' / 'converter'
+CKPT_CONVERTER = BASE_DIR / '..' / '..' / 'services' / 'voice' / 'checkpoints' / 'converter'
 OUTPUT_DIR = BASE_DIR / '..' / '..' / 'services' / 'voice' / 'outputs'
 
-BASE_SPEAKER = BASE_DIR / '..' / '..' / 'services' / 'voice' / 'checkpoints_1226' / 'checkpoints' / 'base_speakers'
+BASE_SPEAKER = BASE_DIR / '..' / '..' / 'services' / 'voice' / 'checkpoints' / 'base_speakers'
 EN_BASE_SPEAKER = BASE_SPEAKER / 'EN' / 'en_default_se.pth'
-REFERENCE_SPEAKER = BASE_DIR / '..' / '..' / 'services' / 'voice' / 'resources' / 'training-audio-v2.mp3'
+REFERENCE_SPEAKER = BASE_DIR / '..' / '..' / 'services' / 'voice' / 'resources' / 'Recording.m4a'
+# services\voice\resources\training-audio-v2.mp3
 
 CKPT_CONVERTER = CKPT_CONVERTER.resolve()
 OUTPUT_DIR = OUTPUT_DIR.resolve()
@@ -40,20 +41,21 @@ texts = {
     'EN': "Did you ever hear a folk tale about a giant turtle?",  # The newest English base speaker model
 }
 
-
-src_path = f'{OUTPUT_DIR}/tmp.wav'
+src_path = f'{OUTPUT_DIR}\\tmp.wav'
 
 model = TTS(language='EN', device=device)
 speaker_ids = model.hps.data.spk2id
 
 source_se = torch.load(EN_BASE_SPEAKER, map_location=device)
+
 if torch.backends.mps.is_available() and device == 'cpu':
     torch.backends.mps.is_available = lambda: False
 
 def voice_conversion(text):
     # Convert text to speech
     model.tts_to_file(text, 0, src_path, speed=1.0)
-    save_path = f'{OUTPUT_DIR}/response.wav' # could be cached in the future
+    save_path = f'{OUTPUT_DIR}\\response.wav' # could be cached in the future
+    print(f"🟢 Generated TTS: {save_path}")
 
     # Run the tone color converter
     encode_message = "@MyShell"

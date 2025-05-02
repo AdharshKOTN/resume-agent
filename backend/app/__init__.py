@@ -20,6 +20,12 @@ def create_app():
         # format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
         format='%(asctime)s %(levelname)s: %(message)s'
     )
+
+    # logging.getLogger("numba").setLevel(logging.WARNING)
+    # logging.getLogger("transformers").setLevel(logging.WARNING)
+    # logging.getLogger("matplotlib").setLevel(logging.WARNING)
+    # logging.getLogger("librosa").setLevel(logging.WARNING)
+    # logging.getLogger("openvoice").setLevel(logging.WARNING)
     app.logger.setLevel(logging.DEBUG)
 
     CORS(app, origins=["http://localhost:3000"]) 

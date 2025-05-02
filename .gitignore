@@ -50,5 +50,9 @@ backend/app/services/voice/checkpoints_1226
 
 backend/app/services/voice/outputs/test.wav
 backend/app/services/voice/outputs/tmp.wav
+backend/app/services/voice/outputs/response.wav
 backend/app/services/voice/resources/training-audio-v2.mp3
 backend/app/services/voice/resources/voice-training.mp3
+backend/app/services/voice/resources/Recording.m4a
+backend/processed
+backend/app/services/voice/checkpoints

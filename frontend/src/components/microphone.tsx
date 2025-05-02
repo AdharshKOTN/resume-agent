@@ -12,10 +12,10 @@ import { AudioResponse } from "./types";
 
 interface MicrophoneProps {
   onTranscript: (transcript: string) => void;
-  onAudio: (audio: AudioResponse) => void;
+  onAudioResponse: (audioResp: string) => void;
 }
 
-export default function Microphone({onTranscript, onAudio}: MicrophoneProps) {
+export default function Microphone({onTranscript, onAudioResponse}: MicrophoneProps) {
   const [isRecording, setIsRecording] = useState(false);
 
   // refs to store audio context, stream, and source ( get and manipulate audio stream from mic)
@@ -44,16 +44,6 @@ export default function Microphone({onTranscript, onAudio}: MicrophoneProps) {
         });
         streamRef.current = stream;
 
-        // const audioContext = new AudioContext();
-        // audioContextRef.current = audioContext;
-
-        // if (audioContext.state === "suspended") {
-        //     await audioContext.resume();
-        // }
-
-        // const source = audioContext.createMediaStreamSource(stream);
-        // sourceRef.current = source;
-
         console.log("Mic access granted");
       } catch (err) {
         console.error("Mic permission denied or error:", err);
@@ -63,10 +53,6 @@ export default function Microphone({onTranscript, onAudio}: MicrophoneProps) {
     initMic();
   }, []);
 
-
-  // socket connection useEffect hook
-  // 1. establish connection to backend
-  // 2. log transcript result
 
   useEffect(() => {
     // const socket = io("http://localhost:5000");
@@ -79,18 +65,30 @@ export default function Microphone({onTranscript, onAudio}: MicrophoneProps) {
         onTranscript(data.text);
     });
 
-    socket.on("audio", (data) => {
+    socket.on("voice_response", (data: AudioResponse) => {
       console.log("🔊 Received audio data:", data); //should be of bytes
-      onAudio(data);
+      console.log("Audio response:", data.audio.byteLength);
+      const audioUrl = URL.createObjectURL(new Blob([data.audio], { type: "audio/wav" }));
+      // const audio = new Audio(audioUrl);
+      // audio.play();
+
+      onAudioResponse(audioUrl);
+      // setTempAudio(audioUrl);
+
     })
 
     socket.on("disconnect", () => {
       console.log("❌ Socket disconnected");
     });
 
+    socket.onAny((event, data) => {
+      console.log("Socket event received:", event, data);
+    });
+
     return () => {
       socket.disconnect();
     };
+    
   }, []);
 
   const startRecording = () => {
@@ -140,22 +138,13 @@ export default function Microphone({onTranscript, onAudio}: MicrophoneProps) {
       setIsRecording(false);
       console.log("🛑 Recording stopped.");
 
-      await finalChunkPromise; // wait for the final chunk to be processed
-      console.log("Final chunk processed.");
-      console.log("Audio chunks:", audioChunksRef.current);
-      console.log("Audio chunks length:", audioChunksRef.current.length);
-      console.log("Audio chunks size:", audioChunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0));
+      await finalChunkPromise;
 
       const fullBlob = new Blob(audioChunksRef.current, {type: "audio/webm"});
-      console.log("🎙️ Full Blob:", fullBlob);
-      console.log("📦 Type:", fullBlob.type);
-      console.log("📏 Size:", fullBlob.size);
 
       if (id) {
-        console.log("Sending content to backend...")
         const arrayBuffer = await fullBlob.arrayBuffer();
         const uint8 = new Uint8Array(arrayBuffer);
-        console.log("🧪 Uint8 preview:", Array.from(uint8.slice(0, 8)));
         socketRef.current?.emit("end_stream", { session_id: id, blob: uint8 });
         console.log(`📤 Sent end_stream for session: ${id}`);
       }

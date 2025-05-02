@@ -6,6 +6,6 @@ type AgentResponse = {
 
 type AudioResponse = {
     session_id: string;
-    audio: Blob;
+    audio: ArrayBuffer;
 }
 export type { AgentResponse, AudioResponse};

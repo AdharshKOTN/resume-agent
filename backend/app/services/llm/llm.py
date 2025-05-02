@@ -1,6 +1,6 @@
 import requests
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "adharsh-tinyllama"
+OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
+MODEL = "adharsh-mistral"
 
 def generate_response(user_prompt: str) -> str:
     payload = {
