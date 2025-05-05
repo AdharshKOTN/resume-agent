@@ -7,12 +7,11 @@ import { Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 
 import socket from "@/components/socket";
-import { on } from "events";
 import { AudioResponse } from "./types";
 
 interface MicrophoneProps {
   onTranscript: (transcript: string) => void;
-  onAudioResponse: (audioResp: string) => void;
+  onAudioResponse: (audioResp: AudioResponse) => void;
 }
 
 export default function Microphone({onTranscript, onAudioResponse}: MicrophoneProps) {
@@ -68,11 +67,11 @@ export default function Microphone({onTranscript, onAudioResponse}: MicrophonePr
     socket.on("voice_response", (data: AudioResponse) => {
       console.log("🔊 Received audio data:", data); //should be of bytes
       console.log("Audio response:", data.audio.byteLength);
-      const audioUrl = URL.createObjectURL(new Blob([data.audio], { type: "audio/wav" }));
+      data.audioPath = URL.createObjectURL(new Blob([data.audio], { type: "audio/wav" }));
       // const audio = new Audio(audioUrl);
       // audio.play();
 
-      onAudioResponse(audioUrl);
+      onAudioResponse(data);
       // setTempAudio(audioUrl);
 
     })

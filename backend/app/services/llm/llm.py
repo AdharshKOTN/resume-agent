@@ -1,11 +1,12 @@
 import requests
+from app.services.rag.embed import generate_prompt
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-MODEL = "adharsh-mistral"
+MODEL = "adharsh-mistral-normal"
 
 def generate_response(user_prompt: str) -> str:
     payload = {
         "model": MODEL,
-        "prompt": sanitize_prompt(user_prompt),
+        "prompt": generate_prompt(user_prompt),
         "stream": False
     }
 
@@ -16,11 +17,4 @@ def generate_response(user_prompt: str) -> str:
     except Exception as e:
         print(f"❌ Ollama error: {e}")
         return "Sorry, I'm having trouble responding right now."
-    
-def sanitize_prompt(user_prompt: str) -> str:
-    # Remove common prompt injection phrases
-    blacklist = ["System:", "Ignore", "Forget previous", "Act as", "###", '"""']
-    for term in blacklist:
-        user_prompt = user_prompt.replace(term, "")
-    # prompt = build_prompt(user_prompt.strip())
-    return user_prompt
+

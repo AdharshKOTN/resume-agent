@@ -4,15 +4,18 @@ import socket from "@/components/socket";
 
 
 interface AudioVisualProps {
-  audioPath: string;
+  audioResp?: AudioResponse;
 }
 
-export default function AudioVisual({ audioPath }: AudioVisualProps) {
+export default function AudioVisual({ audioResp }: AudioVisualProps) {
 
   return (
-    <div className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-      { audioPath && (
-      <audio src={audioPath} autoPlay controls></audio>
+    <div>
+      { audioResp && (
+      <div className="grid grid-cols-2 gap-4">
+      <audio src={audioResp.audioPath} autoPlay controls></audio>
+      <div>Duration: {audioResp.duration}</div>
+      </div>
       )}
     </div>
   );

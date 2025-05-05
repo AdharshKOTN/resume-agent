@@ -26,26 +26,5 @@ export default function TranscriptDisplay({transcripts}: TranscriptDisplayProps)
           </TableBody>
         </Table>
       </div>
-        //     style={{
-        //         maxHeight: '300px',
-        //         overflowY: 'auto',
-        //         border: '1px solid #ccc',
-        //         padding: '10px',
-        //         borderRadius: '5px',
-        //         backgroundColor: '#f9f9f9',
-        //     }}
-        // > 
-        //     {transcripts.map((transcript, index) => (
-        //         <p
-        //             key={index}
-        //             style={{
-        //                 color: colors[index % colors.length],
-        //                 margin: '5px 0',
-        //             }}
-        //         >
-        //             {transcript}
-        //         </p>
-        //     ))}
-        // </div>
     );
 };
