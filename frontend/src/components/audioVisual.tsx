@@ -1,7 +1,4 @@
-import { useEffect, useState } from "react";
 import { AudioResponse } from "./types";
-import socket from "@/components/socket";
-
 
 interface AudioVisualProps {
   audioResp?: AudioResponse;

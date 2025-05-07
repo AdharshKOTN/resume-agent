@@ -56,3 +56,7 @@ backend/app/services/voice/resources/voice-training.mp3
 backend/app/services/voice/resources/Recording.m4a
 backend/processed
 backend/app/services/voice/checkpoints
+
+backend/notebooks
+
+backend/app/services/voice/outputs
