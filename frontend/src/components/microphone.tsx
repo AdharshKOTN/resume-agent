@@ -54,7 +54,6 @@ export default function Microphone({onTranscript, onAudioResponse}: MicrophonePr
 
 
   useEffect(() => {
-    // const socket = io("http://localhost:5000");
     socketRef.current = socket;
 
     socket.on("connect", () => console.log("🔌 Socket connected"));
