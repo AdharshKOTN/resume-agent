@@ -8,7 +8,6 @@ from flask_socketio import SocketIO
 
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'app')))
 
-
 socketio = SocketIO(cors_allowed_origins='http://localhost:3000')
 
 def create_app():

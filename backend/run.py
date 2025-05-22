@@ -1,9 +1,13 @@
 from app import create_app, socketio
 
-from app.services.voice.setup_nltk import setup_nltk
+# from app.services.voice.setup_nltk import setup_nltk
 
 
-setup_nltk()
+# setup_nltk()
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = create_app()
 
