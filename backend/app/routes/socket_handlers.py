@@ -48,11 +48,6 @@ def handle_end_stream(data):
             tmp_webm.write(audio_bytes)
             tmp_webm_path = tmp_webm.name
 
-        # # write to real file for testing
-        # with open("test.webm", "wb") as f:
-        #     f.write(audio_bytes)
-        # print(f"🟢 Saved temp file: {tmp_webm_path}")
-
         # 3. Transcribe the MP3 with Whisper
         result = model.transcribe(tmp_webm_path, language="en", fp16=False)
         text = result["text"].strip()
