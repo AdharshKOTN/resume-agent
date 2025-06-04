@@ -3,34 +3,39 @@ from flask_cors import CORS
 import logging
 from flask_socketio import SocketIO
 
-# import os
-# import sys
+from app.config import Config
 
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'app')))
+from app.routes.socket_handlers import register_socketio_handlers
 
-socketio = SocketIO(cors_allowed_origins='http://localhost:3000')
+# socketio = SocketIO(cors_allowed_origins=[Config.FRONTEND_ORIGIN])
 
 def create_app():
     app = Flask(__name__)
     
-    # Setup logging
+    # Logging
     logging.basicConfig(
-        level=logging.DEBUG,  # Or INFO in production
-        # format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        level=logging.DEBUG,
         format='%(asctime)s %(levelname)s: %(message)s'
     )
-
-    # logging.getLogger("numba").setLevel(logging.WARNING)
-    # logging.getLogger("transformers").setLevel(logging.WARNING)
-    # logging.getLogger("matplotlib").setLevel(logging.WARNING)
-    # logging.getLogger("librosa").setLevel(logging.WARNING)
-    # logging.getLogger("openvoice").setLevel(logging.WARNING)
     app.logger.setLevel(logging.DEBUG)
 
-    CORS(app, origins=["http://localhost:3000"]) 
+    # Load configuration
+    # This will load environment variables from .env file
+    app.config.from_object(Config)
 
-    from .routes import socket_handlers
+    print(f"APP LOADED WITH CONFIG: {app.config['FRONTEND_ORIGIN']}")
 
-    socketio.init_app(app)
+    # CORS for REST endpoints (optional)
+    CORS(app, origins=app.config['FRONTEND_ORIGIN'])
 
-    return app
+    # SocketIO — INIT WITH APP HERE
+    socketio = SocketIO(
+        app,
+        cors_allowed_origins=app.config['FRONTEND_ORIGIN'],
+        async_mode="eventlet",
+        logger=True,
+        engineio_logger=True
+    )
+
+    register_socketio_handlers(socketio)
+    return app, socketio
