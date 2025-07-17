@@ -2,13 +2,12 @@ import io
 import tempfile
 import pytest
 import os
-from app import create_app, socketio
-
+from app import create_app
 TEST_PATH = "test/"
 
 @pytest.fixture
 def client():
-    app = create_app()
+    app, socketio = create_app()
     test_client = socketio.test_client(app, flask_test_client=app.test_client())
     yield test_client
     test_client.disconnect()
