@@ -1,15 +1,26 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
-from app.services.rag.chunks import chunks
+from app.chunks import chunks
 import faiss
 
-## run this code on load
+import os
+
+import logging
+logger = logging.getLogger(__name__)
+
+
+# LLM environment variables
+
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_URL = f"{OLLAMA_HOST}/api/generate"
+MODEL = "mistral"
+
+# RAG initialization
+
 model = SentenceTransformer('all-MiniLM-L6-v2')
 embeddings = model.encode(chunks)
-## store on load
 index = faiss.IndexFlatL2(384)  # 384 is the embedding dimension
-
 index.add(np.array(embeddings))
 
 def generate_prompt(user_prompt: str) -> str:
@@ -47,3 +58,18 @@ def sanitize_prompt(user_prompt: str) -> str:
         user_prompt = user_prompt.replace(term, "")
     # prompt = build_prompt(user_prompt.strip())
     return user_prompt
+
+def generate_response(user_prompt: str) -> str:
+    payload = {
+        "model": MODEL,
+        "prompt": generate_prompt(user_prompt),
+        "stream": False
+    }
+
+    try:
+        response = requests.post(OLLAMA_URL, json=payload)
+        response.raise_for_status() # Ensure we raise an error for bad responses, 400 or 500 status codes
+        return response.json()["response"]
+    except Exception as e:
+        logger.exception(f"❌ Ollama error: {e}")
+        return "Sorry, I'm having trouble responding right now."

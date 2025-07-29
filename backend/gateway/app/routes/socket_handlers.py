@@ -3,6 +3,7 @@ import whisper
 import traceback
 
 import tempfile
+import requests
 import os
 
 import time
@@ -36,7 +37,9 @@ def register_socketio_handlers(socketio):
             # Transcription from audio bytes
             logger.debug(f"🔊 Handling stream end: {session_id}, blob size: {len(audio_bytes)}")
 
-            text = transcribe_audio(audio_bytes)
+            # TODO: update to REST call to microservice
+            # text = transcribe_audio(audio_bytes)
+            text = requests.post("http://localhost:5002/transcribe", data=audio_bytes)
 
             logging.debug(f"🧠 Transcribed ({session_id}): {text}")
             emit("transcript", {"session_id": session_id, "text": text})
@@ -51,9 +54,3 @@ def register_socketio_handlers(socketio):
         except Exception as e:
             logging.exception(f"❌ Transcription error: {traceback.format_exc()}")
             emit("transcript", {"session_id": session_id, "text": "[ERROR] Unable to transcribe."})
-
-        finally:
-            # 4. Clean up temp files
-            for path in [tmp_webm_path]:
-                if os.path.exists(path):
-                    os.remove(path)

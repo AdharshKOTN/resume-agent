@@ -5,9 +5,16 @@ transcribe_blueprint = Blueprint('transcribe', __name__)
 
 @transcribe_blueprint.route("/transcribe", methods=["POST"])
 def transcribe():
-    file = request.files.get("audio")
-    if not file:
-        return jsonify({"error": "No audio file provided"}), 400
     
-    text = transcribe_audio(file)
-    return jsonify({"text": text})
+    audio_bytes = request.get_data()
+
+    # call the transcribe function
+
+    try:
+        text = transcribe_audio(audio_bytes=audio_bytes)
+
+        return text, 200
+
+    # return the text as the REST response
+    except Exception as e:
+        return "Transcription Error", 500
