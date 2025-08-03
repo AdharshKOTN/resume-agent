@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import requests
-
+from torch.cuda import is_available
 
 # LLM environment variables
 
@@ -24,7 +24,7 @@ with open("./app/career_embedding_store.pkl", "rb") as f:
 
 # RAG initialization
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda" if is_available() else "cpu")
 
 # load embeddings, metadata and ids ( usage in RAM? but is there a better way? application is small enough for it to not matter )
 
