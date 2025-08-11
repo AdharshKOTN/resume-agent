@@ -3,7 +3,7 @@
 import AgentRespDisplay from "@/components/agentRespDisplay";
 import Microphone from "@/components/microphone";
 import TranscriptDisplay from "@/components/transcriptDisplay";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {AgentResponse, AudioResponse} from "@/components/types"
 import AudioVisual from "@/components/audioVisual";
 import ServerStatus from "@/components/serverStatus";
@@ -16,23 +16,23 @@ export default function Home() {
 
   const [tempAudioResp, setTempAudioResp] = useState<AudioResponse>();
 
-  const onTranscipt = (transcript: string)  =>{
+  const onTranscipt = useCallback((transcript: string)  =>{
     if(transcript.trim()){
       setTranscripts((prevTranscripts) => [transcript, ...prevTranscripts]);
     }
-  }
+  }, [])
 
-  const onAudioResponse = (audioResp: AudioResponse) => {
+  const onAudioResponse = useCallback((audioResp: AudioResponse) => {
     // console.log("Audio response:", audioResp.audio);
     setTempAudioResp(audioResp);
-  }
+  }, []);
 
-  const onAgentResponse = (response: AgentResponse) => {
+  const onAgentResponse = useCallback((response: AgentResponse) => {
     // console.log("Agent response:", response);
     if(response.text.trim()){
       setResponses((prevResponses) => [response, ...prevResponses]);
     }
-  }
+  }, []);
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">

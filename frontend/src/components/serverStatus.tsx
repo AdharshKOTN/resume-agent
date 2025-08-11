@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 type Status = "checking" | "online" | "offline";
 
-const BACKEND_URL = process.env.BACKEND_HTTP_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.BACKEND_HTTP_URL || "http://0.0.0.0:5000";
 
 export default function ServerStatus() {
   const [status, setStatus] = useState<Status>("checking");
@@ -12,7 +12,7 @@ export default function ServerStatus() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/health`, {
+        const response = await fetch(`${BACKEND_URL}/api/health`, {
           cache: "no-store",
         });
         if (response.ok) {
@@ -22,11 +22,12 @@ export default function ServerStatus() {
         }
       } catch (error) {
         setStatus("offline");
+        console.log(error)
       }
     };
 
     checkHealth();
-    const interval = setInterval(checkHealth, 70000000); // poll every 10s
+    const interval = setInterval(checkHealth, 100000); // poll every 10s
     return () => clearInterval(interval);
   }, []);
 

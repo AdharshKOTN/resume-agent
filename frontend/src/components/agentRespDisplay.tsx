@@ -20,7 +20,7 @@ export default function AgentRespDisplay({responses, onAgentResponse}: AgentResp
                 onAgentResponse(response);
             }
         })
-    }, []);
+    }, [socket, onAgentResponse]);
 
     return (
         <div className="mt-6">

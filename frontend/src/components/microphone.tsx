@@ -87,7 +87,7 @@ export default function Microphone({onTranscript, onAudioResponse}: MicrophonePr
       socket.disconnect();
     };
     
-  }, []);
+  }, [onTranscript, onAudioResponse]);
 
   const startRecording = () => {
     // validate stream is active
