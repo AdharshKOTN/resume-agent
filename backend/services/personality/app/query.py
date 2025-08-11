@@ -1,47 +1,98 @@
-from sentence_transformers import SentenceTransformer
+import os
+import logging
 import numpy as np
 
-import faiss
-import pickle
+# Toggle lightweight test mode (set before import in tests):
+#   UNIT_TEST=1 PYTHONPATH=. python -m unittest ...
+UNIT_TEST = os.getenv("UNIT_TEST") == "1"
 
-import os
-
-import logging
 logger = logging.getLogger(__name__)
 
-import requests
-from torch.cuda import is_available
+# --------------------------------------------------------------------
+# Runtime initialization
+#   - Production: load model, FAISS, pickle store, envs
+#   - UNIT_TEST:  define harmless defaults; tests inject fakes via _set_test_runtime
+# --------------------------------------------------------------------
+if not UNIT_TEST:
+    # Heavy deps only in runtime
+    from sentence_transformers import SentenceTransformer
+    import faiss
+    import pickle
+    import requests
+    from torch.cuda import is_available
 
-# LLM environment variables
+    # LLM env
+    OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    OLLAMA_URL = f"{OLLAMA_HOST}/api/generate"
+    MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_URL = f"{OLLAMA_HOST}/api/generate"
-MODEL = "mistral"
+    # Load embedding store
+    with open("./app/career_embedding_store.pkl", "rb") as f:
+        embedding_store = pickle.load(f)
 
-# load embedding store
-with open("./app/career_embedding_store.pkl", "rb") as f:
-    embedding_store = pickle.load(f)
+    # Build arrays expected by the search pipeline
+    embeddings, metadata, ids = [], [], []
+    for entry in embedding_store:
+        embeddings.append(entry["embedding"])
+        metadata.append(entry["metadata"])
+        ids.append(entry["id"])
 
-# RAG initialization
+    embedding_matrix = np.array(embeddings, dtype=np.float32)
+    dim = int(embedding_matrix.shape[1])
+    index = faiss.IndexFlatL2(dim)
+    index.add(embedding_matrix)
 
-model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda" if is_available() else "cpu")
+    # Embedder
+    model = SentenceTransformer("all-MiniLM-L6-v2", device="cuda" if is_available() else "cpu")
 
-# load embeddings, metadata and ids ( usage in RAM? but is there a better way? application is small enough for it to not matter )
+else:
+    # Lightweight defaults for unit tests (no heavy imports here)
+    # Tests will call _set_test_runtime(...) to inject fakes.
+    import types
 
-embeddings, metadata, ids = [], [], []
+    # Provide a safe default requests stub so generate_response can be called in tests if needed
+    requests = types.SimpleNamespace(
+        post=lambda *a, **k: types.SimpleNamespace(
+            raise_for_status=lambda: None,
+            json=lambda: {"response": "OK (test)"},
+        )
+    )
 
-for entry in embedding_store:
-    embeddings.append(entry["embedding"])
-    metadata.append(entry["metadata"])
-    ids.append(entry["id"])
+    OLLAMA_HOST = "http://localhost:11434"
+    OLLAMA_URL = f"{OLLAMA_HOST}/api/generate"
+    MODEL = "test-model"
 
+    model = None
+    index = None
+    embeddings, metadata, ids = [], [], []
+    embedding_matrix = np.zeros((0, 0), dtype=np.float32)
 
-embedding_matrix = np.array(embeddings, dtype=np.float32)
-dimension = embedding_matrix.shape[1] # dimensionality of matrix
-index = faiss.IndexFlatL2(dimension)  # 384 is the embedding dimension
-index.add(embedding_matrix) # type: ignore
+# --------------------------------------------------------------------
+# Tiny test helpers (used only when UNIT_TEST=1)
+# --------------------------------------------------------------------
+def _set_test_runtime(*, _model, _index, _embeddings, _metadata, _ids):
+    """
+    Keyword args only, explicit for testing and clarity
+    Unit tests call this once to inject tiny, deterministic fakes.
+    Keeps production code untouched while avoiding heavyweight imports during tests.
+    """
+    global model, index, embeddings, metadata, ids, embedding_matrix
+    # module level variables, allows tests to swap in test objects
+    model = _model
+    index = _index
+    embeddings = _embeddings
+    metadata = _metadata
+    ids = _ids
+    embedding_matrix = np.asarray(embeddings, dtype=np.float32)
+
+def _ensure_runtime_ready():
+    if model is None or index is None or embedding_matrix.size == 0:
+        raise RuntimeError("RAG runtime not initialized. In tests, call _set_test_runtime(...).")
+    
+####################################################################################################
 
 def generate_prompt(user_prompt: str) -> str:
+    _ensure_runtime_ready()
 
     # vectorize the query
 

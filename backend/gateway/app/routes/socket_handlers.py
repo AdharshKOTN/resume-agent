@@ -1,5 +1,4 @@
 from flask_socketio import emit
-import whisper
 import traceback
 
 import tempfile
@@ -7,9 +6,6 @@ import requests
 import os
 
 import time
-
-from app.services.llm import generate_response
-# from app.services.voice.voice import voice_conversion
 
 # import sys
 import os
@@ -39,13 +35,13 @@ def register_socketio_handlers(socketio):
 
             # TODO: update to REST call to microservice
             # text = transcribe_audio(audio_bytes)
-            text = requests.post("http://localhost:5002/transcribe", data=audio_bytes)
+            transcript = requests.post("http://localhost:5002/transcribe", data=audio_bytes)
 
-            logging.debug(f"🧠 Transcribed ({session_id}): {text}")
-            emit("transcript", {"session_id": session_id, "text": text})
+            logging.debug(f"🧠 Transcribed ({session_id}): {transcript}")
+            emit("transcript", {"session_id": session_id, "text": transcript})
 
             # return LLM response
-            llm_response = generate_response(text)
+            llm_response = requests.post("http://localhost:5001/personality-response", json={"transcript": transcript})
             duration = round(time.time() - start, 2)
             logging.debug(f"⏱️ LLM response time: {duration:.2f} seconds")
             logging.debug(f"🤖 LLM response ({session_id}): {llm_response}, datatype: {type(llm_response)}")
