@@ -50,8 +50,7 @@ jobs:
             echo
             git log --since="$SINCE" --until="$UNTIL" \
               --no-merges \
-              --pretty="* %s (%h) — %an" \
-              -- frontend
+              --pretty="* %s (%h) — %an"
           } > CHANGELOG.md
 
       - name: Commit changelog
