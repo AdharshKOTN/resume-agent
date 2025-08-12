@@ -1,23 +1,27 @@
-name: Deploy Frontend to Raspberry Pi
+name: Build and Release Frontend
 
 on:
   push:
     paths:
       - 'frontend/**'
+      - '.github/workflows/frontend.yaml'
     branches: [main]
 
 jobs:
-  deploy:
+  release:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    steps:
+      - uses: action/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install dependencies and compile prod artifacts
-        run: npm ci && npm run build
+      - name: Build Static Site
+        run: |
+          npm ci
+          npm run build
 
       - name: Package artifacts
         run: |
