@@ -1,27 +1,57 @@
 name: changelog-today
 
 on:
-  workflow_dispatch: {}  # run manually from Actions tab
+  workflow_dispatch: {}
 
 permissions:
-  contents: write  # needed to push changes back
+  contents: write  # allow pushing back to repo
 
 jobs:
   changelog:
     runs-on: ubuntu-latest
+    env:
+      TZ: America/Los_Angeles   # set your timezone here
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history
 
-      - name: Generate CHANGELOG for today (frontend/)
+      - name: Resolve PT → UTC window
+        id: when
         shell: bash
         run: |
-          TODAY=$(date +%F)
+          # Determine the PT "today" date
+          DAY=$(date +%F)
+          # Convert to UTC start/end timestamps for git log
+          START_UTC=$(TZ="$TZ" date -d "$DAY 00:00:00" -u +%Y-%m-%dT%H:%M:%SZ)
+          END_UTC=$(TZ="$TZ" date -d "$DAY 23:59:59" -u +%Y-%m-%dT%H:%M:%SZ)
+          echo "day=$DAY" >> $GITHUB_OUTPUT
+          echo "since=$START_UTC" >> $GITHUB_OUTPUT
+          echo "until=$END_UTC" >> $GITHUB_OUTPUT
+
+          echo "Pacific Time window: $DAY 00:00-23:59:59"
+          echo "UTC window: $START_UTC → $END_UTC"
+
+      - name: Debug commit range
+        run: |
+          echo "HEAD: $(git rev-parse --short HEAD)"
+          echo "Commits in range:"
+          git log --since='${{ steps.when.outputs.since }}' --until='${{ steps.when.outputs.until }}' --oneline -- frontend | wc -l
+          git log --since='${{ steps.when.outputs.since }}' --until='${{ steps.when.outputs.until }}' --oneline -- frontend | head -20
+
+      - name: Generate CHANGELOG.md
+        shell: bash
+        run: |
+          SINCE='${{ steps.when.outputs.since }}'
+          UNTIL='${{ steps.when.outputs.until }}'
+          DAY='${{ steps.when.outputs.day }}'
           {
-            echo "# Changelog – $TODAY"
+            echo "# Changelog - $DAY"
             echo
-            git log --since="$TODAY 00:00" --until="$TODAY 23:59:59" \
+            git log --since="$SINCE" --until="$UNTIL" \
               --no-merges \
-              --pretty="* %s (%h) — %an"
+              --pretty="* %s (%h) — %an" \
+              -- frontend
           } > CHANGELOG.md
 
       - name: Commit changelog
@@ -29,5 +59,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
-          git commit -m "docs(changelog): $(date +%F) updates" || echo "No changes to commit"
+          git commit -m "docs(changelog): ${{ steps.when.outputs.day }} updates" || echo "No changes"
           git push
