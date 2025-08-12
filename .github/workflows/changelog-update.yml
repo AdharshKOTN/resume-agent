@@ -15,16 +15,13 @@ jobs:
       - name: Generate CHANGELOG for today (frontend/)
         shell: bash
         run: |
-          TZ=America/Los_Angeles  # adjust to your timezone
           TODAY=$(date +%F)
-
           {
             echo "# Changelog – $TODAY"
             echo
             git log --since="$TODAY 00:00" --until="$TODAY 23:59:59" \
               --no-merges \
-              --pretty="* %s (%h) — %an" \
-              -- frontend
+              --pretty="* %s (%h) — %an"
           } > CHANGELOG.md
 
       - name: Commit changelog
