@@ -13,18 +13,35 @@ jobs:
       run:
         working-directory: frontend
 
-    steps:
+- name: Package artifacts
+        run: |
+          tar -C out -czf site.tar.gz .
+          sha256sum site.tar.gz > site.tar.gz.sha256
+
+      - name: Create Release with assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "deploy-${{ github.sha }}"
+          body: "Automated deploy for ${{ github.sha }}"
+          files: |
+            site.tar.gz
+            site.tar.gz.sha256    steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies and compile prod artifacts
+        run: npm ci && npm run build
 
-      - name: Build Next.js app
-        run: npm run build
-
-      - name: Copy to Raspberry Pi
+      - name: Package artifacts
         run: |
-          scp -r out/* pi@YOUR_PI_IP:/var/www/resume-frontend
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          tar -C out -czf site.tar.gz .
+          sha256sum site.tar.gz > site.tar.gz.sha256
+
+      - name: Create Release with assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "deploy-${{ github.sha }}"
+          body: "Automated deploy for ${{ github.sha }}"
+          files: |
+            site.tar.gz
+            site.tar.gz.sha256
