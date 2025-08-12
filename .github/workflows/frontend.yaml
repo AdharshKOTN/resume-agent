@@ -7,6 +7,10 @@ on:
       - '.github/workflows/frontend.yaml'
     branches: [main]
 
+defaults:
+  run:
+    working-directory: frontend
+
 jobs:
   release:
     runs-on: ubuntu-latest
