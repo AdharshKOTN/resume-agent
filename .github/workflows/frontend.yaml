@@ -7,6 +7,9 @@ on:
       - '.github/workflows/frontend.yaml'
     branches: [main]
 
+permissions:
+  contents: write
+
 defaults:
   run:
     working-directory: frontend
@@ -39,5 +42,5 @@ jobs:
           tag_name: "deploy-${{ github.sha }}"
           body: "Automated deploy for ${{ github.sha }}"
           files: |
-            site.tar.gz
-            site.tar.gz.sha256
+            frontend/site.tar.gz
+            frontend/site.tar.gz.sha256
