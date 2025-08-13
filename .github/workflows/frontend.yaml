@@ -17,6 +17,7 @@ defaults:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +28,9 @@ jobs:
           cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Build Static Site
+        env:
+          NEXT_PUBLIC_BACKEND_HTTP_URL: ${{ secrets.NEXT_PUBLIC_BACKEND_HTTP_URL }}
+          NEXT_PUBLIC_BACKEND_WS_URL:   ${{ secrets.NEXT_PUBLIC_BACKEND_WS_URL }}
         run: |
           npm ci
           npm run build
