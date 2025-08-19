@@ -43,7 +43,6 @@ def create_app():
 
     app.register_blueprint(health_bp)
 
-
     socketio = SocketIO(
         app,
         cors_allowed_origins=app.config['FRONTEND_ORIGIN'],

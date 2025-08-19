@@ -2,236 +2,281 @@
 
 import { useState, useRef, useEffect } from "react";
 
-import { Socket } from "socket.io-client";
-
 import { v4 as uuidv4 } from "uuid";
 
-import socket from "@/components/socket";
-import { AudioResponse } from "./types";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 interface MicrophoneProps {
-  onTranscript: (transcript: string) => void;
-  onAudioResponse: (audioResp: AudioResponse) => void;
+  sessionId: string;
 }
 
-export default function Microphone({onTranscript, onAudioResponse}: MicrophoneProps) {
-  const [isRecording, setIsRecording] = useState(false);
+export default function Microphone({ sessionId }: MicrophoneProps) {
 
-  // refs to store audio context, stream, and source ( get and manipulate audio stream from mic)
-  // -----------------------------------------------------------------------------------------------
+  //stage 1: microphone access
+  const [userMicAccess, setUserMicAccess] = useState<boolean>(false);
+  const [hasStream, setHasStream] = useState<boolean>(false);
+
+  //stage 2: recording or cancelling
   const streamRef = useRef<MediaStream | null>(null); // getting mic stream from browser
-  // const audioContextRef = useRef<AudioContext | null>(null); // to create audio context for visualiztion later on
-  // const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null); // for analyzer node?
-  // ----------------------------------------------------------------------------------------------
-  // ref to utilize microphone stream
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  // ----------------------------------------------------------------------------------------------
-  // ref to send/recieve audio data to/from backend
-  const socketRef = useRef<Socket | null>(null);
-  // ----------------------------------------------------------------------------------------------
-  // Session information
-  // const sessionId = useRef<string | null>(null);
+  const audioChunksRef = useRef<Blob[] | null>(null);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const requestId = useRef<string | null>(null);
 
-  // store one long audio chunk to transcribe and pass to the agent
-  const audioChunksRef = useRef<Blob []>([]);
+  // stage 2a: timer
+  const [duration, setDuration] = useState<number>(0);
+  const [segmentStart, setSegmentStart] = useState<number>(0)
+  const CAP_MS = 60_000;
+  const accMsRef = useRef(0);
+  const segStartRef = useRef<number | null>(null);
+  const tickRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  // stage 3: pause and preview
+  const [audioURL, setAudioURL] = useState<string | null>(null);
+
+  //stage 4: submit
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // timer helper functions
+  function startTimer() {
+    segStartRef.current = performance.now();
+    if (tickRef.current) clearInterval(tickRef.current);
+    tickRef.current = window.setInterval(() => {
+      if (segStartRef.current == null) return;
+      const live = performance.now() - segStartRef.current;
+      const total = Math.min(CAP_MS, accMsRef.current + live);
+      setDuration(total);                 // you already have `duration` state
+    }, 200) as unknown as number;
+  }
+
+  function pauseTimer() {
+    if (segStartRef.current != null) {
+      accMsRef.current += performance.now() - segStartRef.current;
+      segStartRef.current = null;
+    }
+    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
+  }
+
+  function resetTimer() {
+    pauseTimer();
+    accMsRef.current = 0;
+    setDuration(0);
+  }
+
+  useEffect(() => { // access mic from user, set flag to allow recording
     const initMic = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            channelCount: 1,
+          },
         });
         streamRef.current = stream;
-
+        setUserMicAccess(true);
+        setHasStream(true);
         console.log("Mic access granted");
       } catch (err) {
-        console.error("Mic permission denied or error:", err);
+        console.info("Mic permission denied or error:", err);
+        setUserMicAccess(false);
+        setHasStream(false);
       }
     };
 
     initMic();
   }, []);
 
+  useEffect(() => {
+  if (duration >= CAP_MS && mediaRecorderRef.current?.state === "recording") {
+    try { mediaRecorderRef.current.stop(); } catch {}
+    pauseTimer(); // ensures timer stops even if stop throws
+  }
+}, [duration]);
 
   useEffect(() => {
-    socketRef.current = socket;
-
-    socket.on("connect", () => console.log("🔌 Socket connected"));
-
-    socket.on("transcript", (data) => {
-        console.log("🗣️ Received transcript:", data.text);
-        onTranscript(data.text);
-    });
-
-    socket.on("voice_response", (data: AudioResponse) => {
-      console.log("🔊 Received audio data:", data); //should be of bytes
-      console.log("Audio response:", data.audio.byteLength);
-      data.audioPath = URL.createObjectURL(new Blob([data.audio], { type: "audio/wav" }));
-      // const audio = new Audio(audioUrl);
-      // audio.play();
-
-      onAudioResponse(data);
-      // setTempAudio(audioUrl);
-
-    })
-
-    socket.on("disconnect", () => {
-      console.log("❌ Socket disconnected");
-    });
-
-    socket.onAny((event, data) => {
-      console.log("Socket event received:", event, data);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-    
-  }, [onTranscript, onAudioResponse]);
-
-  const startRecording = () => {
-    // validate stream is active
-    if (!streamRef.current) {
-      console.error("❌ No mic stream available.");
-      return;
-    }
-
-    audioChunksRef.current = []; // reset the audio chunks array
-    console.log("chunks array reset: " + audioChunksRef.current);
-
-    // set new sessionID for each conversation
-    const id = uuidv4();
-    console.log("New session ID: " + id);
-    console.log(`Setting session id: ${id} - ${id}`)
-
-    // notify backend of new stream
-    socketRef.current?.emit("start_stream", { session_id: id });
-    console.log(`🎙️ Starting new session: ${id}`);
-
-    const recorder = new MediaRecorder(streamRef.current!, {
-      mimeType: "audio/webm;codecs=opus",
-    });
-
-    // promise data flow controller
-
-    let resolveFinal: () => void;
-
-    const finalChunkPromise = new Promise<void>((res) => {
-      resolveFinal = res;
-    });
-
-    // recorder behavior set for when data appears and when the recording stops?
+    if (!hasStream || !streamRef.current) return;
+    const recorder = new MediaRecorder(streamRef.current!);
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
-        // sendAudioChunkToBackend(event.data, id);
-        audioChunksRef.current.push(event.data);
-      }
-      if (recorder.state === "inactive") {
-        resolveFinal();
-        console.log("Recording stopped, sending final chunk...");
+        audioChunksRef.current!.push(event.data);
       }
     };
-
-    recorder.onstop = async () => {
-      setIsRecording(false);
-      console.log("🛑 Recording stopped.");
-
-      await finalChunkPromise;
-
-      const fullBlob = new Blob(audioChunksRef.current, {type: "audio/webm"});
-
-      if (id) {
-        const arrayBuffer = await fullBlob.arrayBuffer();
-        const uint8 = new Uint8Array(arrayBuffer);
-        socketRef.current?.emit("end_stream", { session_id: id, blob: uint8 });
-        console.log(`📤 Sent end_stream for session: ${id}`);
-      }
-      else{
-        console.log(`Invalid Session: ${id}`)
-      }
-  
-      // Playback test
-      // const audioURL = URL.createObjectURL(fullBlob);
-      // const audio = new Audio(audioURL);
-      // // audio.play().then(() => {
-      // //     console.log("✅ Audio playback started.");
-      // // }).catch((err) => {
-      // //     console.error("❌ Audio playback error:", err);
-      // // });
-  
-      // // Optional: Save for manual inspection
-      // const a = document.createElement("a");
-      // a.href = audioURL;
-      // a.download = "debug_recording.webm";
-      // a.click();
-      
-
-      mediaRecorderRef.current = null;
-    };
-
-    // 1 second chunks of audio are emitted
-    // recorder.start(1000); // emit audio every 1 second
-    recorder.start(); // uninterrupted recording
     mediaRecorderRef.current = recorder;
+  }, [hasStream]);
+
+
+  const startRecording = async () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state !== "inactive") return;
+    if (requestId.current === null) {
+      requestId.current = uuidv4();
+      // setSegmentStart(performance.now())
+      console.log("New request ID: " + requestId.current);
+      audioChunksRef.current = [];
+    }
+    else {
+      console.log("Appending to existing request" + + requestId.current);
+    }
+    recorder.start(1000);
+    startTimer();
     setIsRecording(true);
   };
 
-  // free up the resources related to the session and recording
-  const stopRecording = async () => {
-    if (
-        mediaRecorderRef.current! &&
-        mediaRecorderRef.current.state !== "inactive"
-      ) {
-        mediaRecorderRef.current.stop(); // should halt the recording and forward the blob array to the backend
-        console.log("Stopping MediaRecorder");
-    }
-    
-    setIsRecording(false);
+  useEffect(() => {
+
+  }, [isRecording])
+
+  const pauseRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state !== "recording") return;
+
+    const onFlush = (e: BlobEvent) => {
+      if (e.data && e.data.size > 0) audioChunksRef.current!.push(e.data);
+      recorder.removeEventListener("dataavailable", onFlush);
+      recorder.pause();                    // pause only after the flush landed
+      // (optional) build preview URL from audioChunksRef here
     };
 
+    recorder.addEventListener("dataavailable", onFlush, { once: true });
+    recorder.requestData(); 
+
+    const blob = new Blob(audioChunksRef.current!, { type: recorder.mimeType || "" });
+    // recorder.pause();
+    pauseTimer();
+
+    setAudioURL(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(blob);
+    })
+  };
+
   const toggleRecording = () => {
+    if (!userMicAccess) return;
     if (isRecording) {
-      stopRecording();
+      setIsRecording(false);
+      pauseRecording();
     } else {
+      setIsRecording(true);
       startRecording();
     }
   };
 
+  const onCancel = () => {
+    const recorder = mediaRecorderRef.current!;
+    if (
+      recorder! &&
+      recorder.state !== "inactive"
+    ) {
+      recorder.stop();
+    }
+
+    setIsRecording(false);
+    setAudioURL(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    })
+    audioChunksRef.current = [];
+    requestId.current = null;
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const rec = mediaRecorderRef.current;
+      if (rec && rec.state !== "inactive") {
+        await new Promise<void>(res => {
+          rec.addEventListener("stop", () => res(), { once: true });
+          rec.stop();
+        });
+      }
+
+      const blob = new Blob(audioChunksRef.current!);
+      const form = new FormData();
+      form.append("file", blob, `rec-${Date.now()}.webm`);
+      form.append("session_id", sessionId);
+      form.append("request_id", requestId.current!);
+
+      const resp = await fetch("/api/recordings", { method: "POST", body: form });
+      if (!resp.ok) throw new Error(`upload failed: ${resp.status}`);
+
+      setAudioURL(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
+      audioChunksRef.current = [];
+      requestId.current = null;
+
+    } catch (err) {
+      console.error(err);
+      // keep chunks/requestId so user can retry
+    } finally {
+      setIsSubmitting(false);
+      setIsRecording(false);
+    }
+  };
+
+
   return (
-    <div className="flex flex-col gap-2 items-center justify-center">
+    // inside your Microphone component JSX
+    <div className="flex items-center gap-3">
+      {/* Mic toggle */}
       <button
-        className="bg-black border-2 border-white hover:bg-gray-700 py-2 px-4 w-15 h-15 rounded-full"
-        onClick={toggleRecording}>
+        type="button"
+        onClick={toggleRecording}
+        disabled={userMicAccess === false || isSubmitting}
+        aria-pressed={isRecording}
+        className={`inline-flex items-center gap-2 rounded-full border-2 px-4 py-2
+      ${isRecording ? "bg-gray-800 border-white" : "bg-black border-white hover:bg-gray-700"
+
+          }
+      ${userMicAccess === false || isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+      >
+        {/* your same mic svgs */}
         {isRecording ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="size-6">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"
-            />
+          <svg xmlns="http://www.w3.org/2000/svg" className="size-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
           </svg>
         ) : (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            aria-hidden="true"
-            fill="none"
-            stroke="red"
-            className="size-6">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m3 3 18 18m-4.399-4.4A6 6 0 0 0 18 12.75v-1.5M9 9V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-.537 1.713M12 18.75a6 6 0 0 0 2.292-.455M12 18.75a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5m-4.02-6.762a3 3 0 0 1-2.718-2.718"></path>
+          <svg xmlns="http://www.w3.org/2000/svg" className="size-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="red" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m3 3 18 18m-4.399-4.4A6 6 0 0 0 18 12.75v-1.5M9 9V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-.537 1.713M12 18.75a6 6 0 0 0 2.292-.455M12 18.75a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5m-4.02-6.762a3 3 0 0 1-2.718-2.718" />
           </svg>
         )}
+        <span className="text-white text-sm font-medium">
+          {isRecording ? "Recording" : "Record"}
+        </span>
       </button>
+
+        <AnimatePresence initial={false}>
+      {(!isRecording && audioURL) && (
+        <div className="flex items-center gap-2">
+          <audio
+            key={audioURL}
+            controls
+            preload="metadata"
+            className="h-10 w-64 rounded bg-black"
+            src={audioURL}
+          />
+
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            aria-label="Cancel recording"
+            className={`inline-flex items-center justify-center rounded border px-3 py-2 bg-black text-white
+                        ${isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"}`}
+          >
+            ×
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className={`inline-flex items-center rounded border px-3 py-2 bg-black text-white
+                        ${isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"}`}
+          >
+            {isSubmitting ? "Submitting…" : "Submit"}
+          </button>
+        </div>)}
+        </AnimatePresence>
     </div>
+
   );
 }

@@ -1,26 +1,15 @@
 "use client";
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
 
-import socket from "@/components/socket";
 import { useEffect } from "react";
 import {AgentResponse} from "@/components/types"
 
 
 interface AgentRespDisplayProps {
     responses: AgentResponse[];
-    onAgentResponse: (response: AgentResponse) => void;
 }
 
-export default function AgentRespDisplay({responses, onAgentResponse}: AgentRespDisplayProps) {
-
-    useEffect(() => {
-        socket.on("agent_response", (response: AgentResponse) => {
-            console.log("Received agent response:", response);
-            if (response.text.trim()) {
-                onAgentResponse(response);
-            }
-        })
-    }, [socket, onAgentResponse]);
+export default function AgentRespDisplay({responses}: AgentRespDisplayProps) {
 
     return (
         <div className="mt-6">
