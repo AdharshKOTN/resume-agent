@@ -174,8 +174,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
     mediaRecorderRef.current = recorder;
   }, [hasStream]);
 
-  // eslint-disable-next-line @typescript-eslint/exhaustive-deps
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (phase !== "listening" || !analyserRef.current || !waveCanvasRef.current) return;
 

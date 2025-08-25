@@ -12,19 +12,17 @@ const URL  = process.env.NEXT_PUBLIC_BACKEND_WS_URL ?? "";
 
 function create(): Socket {
   return io(URL, {
-    autoConnect: false,           // ← you will call connect() yourself
+    autoConnect: false,
     transports: ["websocket"],
     timeout: 10000,
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 4000,
-    // withCredentials: true,     // enable if you rely on cookies across origins
   });
 }
 
 export function getSocket(): Socket {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   return ((globalThis as unknown as { __appSocket?: Socket }).__appSocket ??= create());
 }
 

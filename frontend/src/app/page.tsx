@@ -59,6 +59,7 @@ export default function Home() {
   }, [sessionId]); // when session id reset, reconnect socket with new session id
 
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { // recieve socket communication
 
     const socket = socketRef.current;
