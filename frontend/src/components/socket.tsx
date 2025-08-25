@@ -23,7 +23,7 @@ function create(): Socket {
 }
 
 export function getSocket(): Socket {
-  return ((globalThis as unknown as { __appSocket?: Socket }).__appSocket ??= create());   // eslint-ignore-line typescript-eslint/no-excplicit-any
+  return ((globalThis as unknown as { __appSocket?: Socket }).__appSocket ??= create());   // eslint-disable-line typescript-eslint/no-explicit-any
 }
 
 export function connectSocket(sessionId: string): Socket {
