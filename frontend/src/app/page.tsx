@@ -4,7 +4,7 @@ import AgentRespDisplay from "@/components/agentRespDisplay";
 import Microphone from "@/components/microphone";
 import TranscriptDisplay from "@/components/transcriptDisplay";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {AgentResponse, AudioResponse} from "@/components/types"
+import {AgentResponse} from "@/components/types"
 import ServerStatus from "@/components/serverStatus";
 import { Socket } from "socket.io-client";
 

@@ -3,7 +3,9 @@
 import { io, Socket } from "socket.io-client";
 
 declare global {
-  let __appSocket: Socket | undefined;
+  interface GlobalThis {
+      __appSocket?: Socket;
+  }
 }
 
 const URL  = process.env.NEXT_PUBLIC_BACKEND_WS_URL ?? "";
@@ -22,7 +24,8 @@ function create(): Socket {
 }
 
 export function getSocket(): Socket {
-  return (globalThis.__appSocket ??= create());
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  return ((globalThis as unknown as { __appSocket?: Socket }).__appSocket ??= create());
 }
 
 export function connectSocket(sessionId: string): Socket {

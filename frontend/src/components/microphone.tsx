@@ -174,6 +174,8 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
     mediaRecorderRef.current = recorder;
   }, [hasStream]);
 
+  // eslint-disable-next-line @typescript-eslint/exhaustive-deps
+
   useEffect(() => {
     if (phase !== "listening" || !analyserRef.current || !waveCanvasRef.current) return;
 
@@ -286,6 +288,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
         const v = buf[i];
         const y = (0.5 - v / 2) * HEIGHT;
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         x += step;
       }
