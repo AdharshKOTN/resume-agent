@@ -215,7 +215,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
       smoothedDecibelsRef.current =
         DECIBEL_SMOOTHING_ALPHA * currentDecibels +
         (1 - DECIBEL_SMOOTHING_ALPHA) * smoothedDecibelsRef.current;
-      console.log("decibels: " + smoothedDecibelsRef.current);
+      console.log("(Speaking Volume ) decibels: " + smoothedDecibelsRef.current);
 
 
       // --- Hysteresis decision (two thresholds) ---
