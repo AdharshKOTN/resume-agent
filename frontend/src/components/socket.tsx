@@ -4,11 +4,11 @@ import { io, Socket } from "socket.io-client";
 
 declare global {
   interface GlobalThis {
-      __appSocket?: Socket;
+    __appSocket?: Socket;
   }
 }
 
-const URL  = process.env.NEXT_PUBLIC_BACKEND_WS_URL ?? "";
+const URL = process.env.NEXT_PUBLIC_BACKEND_WS_URL ?? "";
 
 function create(): Socket {
   return io(URL, {
@@ -23,7 +23,7 @@ function create(): Socket {
 }
 
 export function getSocket(): Socket {
-  return ((globalThis as unknown as { __appSocket?: Socket }).__appSocket ??= create());   // eslint-disable-line typescript-eslint/no-explicit-any
+  return ((globalThis as unknown as { __appSocket?: Socket }).__appSocket ??= create()); // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export function connectSocket(sessionId: string): Socket {
