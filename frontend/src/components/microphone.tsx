@@ -174,7 +174,6 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
     mediaRecorderRef.current = recorder;
   }, [hasStream]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (phase !== "listening" || !analyserRef.current || !waveCanvasRef.current) return;
 
@@ -303,7 +302,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
       ro.disconnect();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
-  }, [phase, analyserRef]);
+  }, [phase, analyserRef]);   // eslint-disable-line react-hooks/exhaustive-deps
 
 
   const startRecording = async () => {
