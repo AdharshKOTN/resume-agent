@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronsLeftRightEllipsisIcon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 import { v4 as uuidv4 } from "uuid";
@@ -49,7 +48,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
   const CAP_MS = 60_000; // 60s
   const segStartRef = useRef<number | null>(null);
   const tickRef = useRef<number | null>(null);
-  const [duration, setDuration] = useState(0);
+  // const [duration, setDuration] = useState(0);
 
 
   //stage 4: submit
@@ -60,7 +59,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
   const initAnalyser = async () => {
     if (!streamRef.current) return null;
 
-    const audioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+    const audioContext = window.AudioContext;
     if (!audioCtxRef.current) audioCtxRef.current = new audioContext();
     //browser preferred audiocontext
 
@@ -103,9 +102,9 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
       const start = segStartRef.current;
       if (start == null) return; // stopped
 
-      const elapsed = performance.now() - start;
-      const clamped = Math.min(CAP_MS, elapsed);
-      setDuration(clamped);
+      // const elapsed = performance.now() - start;
+      // const clamped = Math.min(CAP_MS, elapsed);
+      // setDuration(clamped);
 
     }, 200) as unknown as number;
   }
@@ -119,7 +118,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
   // Reset to zero (call after submit completes)
   function resetTimer() {
     stopTimer();
-    setDuration(0);
+    // setDuration(0);
   }
 
   function stopRecorderIfActive() {
@@ -234,7 +233,6 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
         isCurrentlySpeakingRef.current = true;
         millisecondsQuietRef.current = 0;
         startTimer();
-        mediaRecorderRef.current?.state === "inactive" && mediaRecorderRef.current.start(300);
       } else if (crossedIntoSilence) {
         console.log("User stopped speaking. checking for how long...");
         isCurrentlySpeakingRef.current = false;

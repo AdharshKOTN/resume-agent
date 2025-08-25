@@ -2,16 +2,8 @@
 "use client";
 import { io, Socket } from "socket.io-client";
 
-// const socket = io(process.env.NEXT_PUBLIC_BACKEND_WS_URL, {
-//   transports: ["websocket"],
-//   reconnectionAttempts: 5,
-//   reconnectionDelay: 1000,
-// });
-
-// export default socket;
-
 declare global {
-  var __appSocket: Socket | undefined;
+  let __appSocket: Socket | undefined;
 }
 
 const URL  = process.env.NEXT_PUBLIC_BACKEND_WS_URL ?? "";
@@ -40,11 +32,3 @@ export function connectSocket(sessionId: string): Socket {
   if (!s.connected) s.connect();
   return s;
 }
-
-// export function hardDisconnectSocket() {
-//   const s = globalThis.__appSocket;
-//   if (!s) return;
-//   s.removeAllListeners();
-//   s.disconnect();
-//   globalThis.__appSocket = undefined;
-// }

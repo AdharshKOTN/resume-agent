@@ -5,7 +5,6 @@ import Microphone from "@/components/microphone";
 import TranscriptDisplay from "@/components/transcriptDisplay";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {AgentResponse, AudioResponse} from "@/components/types"
-import AudioVisual from "@/components/audioVisual";
 import ServerStatus from "@/components/serverStatus";
 import { Socket } from "socket.io-client";
 
@@ -24,9 +23,10 @@ export default function Home() {
   
   const socketRef = useRef<Socket | null>(getSocket());
 
-  const onTranscipt = useCallback((transcript: string)  =>{
-    if(transcript.trim()){
-      setTranscripts((prevTranscripts) => [transcript, ...prevTranscripts]);
+  const onTranscript = useCallback((transcript: string)  =>{
+    const clean_transcript = transcript.trim();
+    if(clean_transcript){
+      setTranscripts((prevTranscripts) => [clean_transcript, ...prevTranscripts]);
     }
   }, [])
 
@@ -36,8 +36,8 @@ export default function Home() {
   // }, []);
 
   const onAgentResponse = useCallback((response: AgentResponse) => {
-    // console.log("Agent response:", response);
-    if(response.text.trim()){
+    response.text = response.text.trim();
+    if(response.text){
       setResponses((prevResponses) => [response, ...prevResponses]);
     }
   }, []);
@@ -68,10 +68,14 @@ export default function Home() {
       socket.on("connect", () => console.log("🔌 Socket connected"));
 
       socket.on("transcript", (data) => {
-          console.log("🗣️ Received transcript:", data.text);
-          //pass to the transcript component
-          // onTranscript(data.text);
+          console.log("Received transcript:", data.text);
+          onTranscript(data.text);
       });
+
+      socket.on("agent_response", (data) => {
+        console.log("Received response: " + data.text);
+        onAgentResponse(data);
+      })
 
       socket.on("disconnect", () => {
         console.log("❌ Socket disconnected");
@@ -105,9 +109,8 @@ export default function Home() {
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <ServerStatus />
-        {/* <AudioVisual audioResp={tempAudioResp}/> */}
-        <AgentRespDisplay responses={responses} onAgentResponse={onAgentResponse}/>
-        <Microphone sessionId={sessionId} onTranscript={onTranscipt}/>
+        <AgentRespDisplay responses={responses}/>
+        <Microphone sessionId={sessionId}/>
         <TranscriptDisplay transcripts={transcripts}/>
       </main>
       <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">

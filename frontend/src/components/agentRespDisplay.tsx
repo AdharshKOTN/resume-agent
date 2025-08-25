@@ -1,7 +1,6 @@
 "use client";
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
 
-import { useEffect } from "react";
 import {AgentResponse} from "@/components/types"
 
 
