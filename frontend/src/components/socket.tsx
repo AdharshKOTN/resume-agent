@@ -23,12 +23,13 @@ function create(): Socket {
 }
 
 export function getSocket(): Socket {
-  return ((globalThis as unknown as { __appSocket?: Socket }).__appSocket ??= create()); // eslint-disable-line @typescript-eslint/no-explicit-any
+  return ((globalThis as unknown as { __appSocket?: Socket }).__appSocket ??= create());
 }
 
 export function connectSocket(sessionId: string): Socket {
   const s = getSocket();
   // attach handshake data before connecting (or reconnecting)
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((s as any).auth?.session_id !== sessionId) s.auth = { session_id: sessionId };
   if (!s.connected) s.connect();
   return s;
