@@ -1,6 +1,15 @@
-from app import create_app
+from gunicorn.app.wsgiapp import run
+import os, sys
 
-app = create_app()
+sys.argv = [
+    "gunicorn",
+    "app:create_app()",
+    "-b", "0.0.0.0:5002",
+    "-w", os.getenv("WEB_CONCURRENCY", "2"),
+    "-k", "gthread",
+    "-t", os.getenv("TIMEOUT", "60"),
+    "--access-logfile", "-",
+    "--error-logfile", "-",
+]
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+run()

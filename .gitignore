@@ -60,3 +60,6 @@ backend/app/services/voice/checkpoints
 backend/notebooks
 
 backend/app/services/voice/outputs
+
+# gpu-dep lock file
+backend/services/personality/conda-linux-64.lock

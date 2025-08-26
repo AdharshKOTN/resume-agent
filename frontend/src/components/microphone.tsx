@@ -34,7 +34,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
 
   // stage 2a: speech detection
   const DECIBEL_ON_THRESHOLD = -38;   // cross up => user started speaking
-  const DECIBEL_OFF_THRESHOLD = -48;   // drop below => user stopped speaking
+  const DECIBEL_OFF_THRESHOLD = -53;   // drop below => user stopped speaking
   const QUIET_HOLD_MILLISECONDS = 1500; // duration that user stops speaking, consider question is ready
   const DECIBEL_SMOOTHING_ALPHA = 0.20; // 0..1 (lower = smoother)
 
