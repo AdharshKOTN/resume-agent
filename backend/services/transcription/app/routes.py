@@ -6,10 +6,8 @@ transcribe_blueprint = Blueprint('transcribe', __name__)
 @transcribe_blueprint.route("/transcribe", methods=["POST"])
 def transcribe():
     
-    audio_bytes = request.get_data()
-
-    # call the transcribe function
-
+    audio_bytes = request.files["audio_file"].read()
+    
     try:
         text = transcribe_audio(audio_bytes=audio_bytes)
 

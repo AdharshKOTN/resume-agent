@@ -10,8 +10,6 @@ def get_response():
     
     user_prompt = request.get_json()["transcript"]
 
-    # call the transcribe function
-
     try:
         text = generate_response(user_prompt=user_prompt)
 
@@ -19,4 +17,5 @@ def get_response():
 
     # return the text as the REST response
     except Exception as e:
+        print(e)
         return "LLM Error", 500
