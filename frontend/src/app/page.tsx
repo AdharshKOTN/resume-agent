@@ -1,6 +1,5 @@
 "use client";
 
-import Head from "next/head";
 import { useCallback, useEffect, useState } from "react";
 
 import AgentRespDisplay from "@/components/agentRespDisplay";
@@ -50,9 +49,7 @@ export default function Home() {
   return (
     <>
       <div className="grid grid-rows-[20px_1fr_20px] min-h-screen p-8 pb-20 gap-16 sm:p-20">
-        {/* MAIN */}
         <main className="row-start-2 flex flex-col gap-8 items-start">
-          {/* Top-left title */}
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
             Adharsh’s Interactive Resume
           </h1>
@@ -63,7 +60,6 @@ export default function Home() {
           <TranscriptDisplay transcripts={transcripts} />
         </main>
 
-        {/* FOOTER */}
         <footer className="row-start-3 flex items-center gap-6 justify-center text-sm text-neutral-500">
           <a
             href="https://github.com/AdharshKOTN"
