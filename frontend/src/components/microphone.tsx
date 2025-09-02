@@ -8,7 +8,7 @@ interface MicrophoneProps {
   sessionId: string;
 }
 
-type Phase = "idle" | "listening" | "processing" | "responding";
+type Phase = "idle" | "listening" | "processing";
 
 export default function Microphone({ sessionId }: MicrophoneProps) {
 
@@ -33,19 +33,19 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
   const requestId = useRef<string | null>(null);
 
   // stage 2a: speech detection
-  const DECIBEL_ON_THRESHOLD = -38;   // cross up => user started speaking
-  const DECIBEL_OFF_THRESHOLD = -53;   // drop below => user stopped speaking
+  const SPEAKING_THRESHOLD = -15;   // cross up => user started speaking
+  const SILENCE_THRESHOLD = -55;   // drop below => user stopped speaking
   const QUIET_HOLD_MILLISECONDS = 1500; // duration that user stops speaking, consider question is ready
   const DECIBEL_SMOOTHING_ALPHA = 0.20; // 0..1 (lower = smoother)
 
-  // High-frequency refs (no re-render spam)
-  const isCurrentlySpeakingRef = useRef(false);
+  const isCurrentlySpeakingRef = useRef<boolean>(false);
+  const hasEverSpokenRef = useRef<boolean>(false);
   const smoothedDecibelsRef = useRef(-100);
-  const millisecondsQuietRef = useRef(0);
+  const timeUserStoppedSpeaking = useRef(0);
   const lastFrameTimestampRef = useRef<number | null>(null);
 
   // stage 2b: timer
-  const CAP_MS = 60_000; // 60s
+  const CAP_MS = 15_000; // 15s
   const segStartRef = useRef<number | null>(null);
   const tickRef = useRef<number | null>(null);
   // const [duration, setDuration] = useState(0);
@@ -93,7 +93,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
   // timer helper functions
   // Start ticking from *first speech*
   function startTimer() {
-    console.log("Starting Timer...")
+    // console.log("Starting Timer...")
     if (segStartRef.current != null) return; // already running
     segStartRef.current = performance.now();
 
@@ -149,7 +149,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
         streamRef.current = stream;
         setUserMicAccess(true);
         setHasStream(true);
-        console.log("Mic access granted");
+        // console.log("Mic access granted");
       } catch (err) {
         console.info("Mic permission denied or error:", err);
         setUserMicAccess(false);
@@ -161,13 +161,15 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
   }, []);
 
   useEffect(() => { // MediaRecorder feeds into audioChunks
-    if (!hasStream || !streamRef.current) return;
-
-    console.log("Starting Media Recording process.")
-    const recorder = new MediaRecorder(streamRef.current!);
+    // console.log("hasStream: " + hasStream);
+    if (!hasStream || !streamRef.current) {
+      return;
+    }
+    const recorder = new MediaRecorder(streamRef.current!, {
+      mimeType: "audio/webm;codecs=opus"
+    });
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
-        if (!audioChunksRef.current) audioChunksRef.current = [];
         audioChunksRef.current!.push(event.data);
       }
     };
@@ -175,9 +177,9 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
   }, [hasStream]);
 
   useEffect(() => {
+    // console.log("Phase changed: " + phase);
     if (phase !== "listening" || !analyserRef.current || !waveCanvasRef.current) return;
 
-    console.log("Starting analysis");
     const analyser = analyserRef.current;
     analyser.fftSize = 2048;
     const buf = new Float32Array(analyser.fftSize);
@@ -211,60 +213,82 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
       const rootMeanSquare = Math.sqrt(energySum / buf.length);
       const currentDecibels = 20 * Math.log10(Math.max(rootMeanSquare, 1e-8));
 
-      // --- Smooth dB to reduce flicker ---
       smoothedDecibelsRef.current =
         DECIBEL_SMOOTHING_ALPHA * currentDecibels +
         (1 - DECIBEL_SMOOTHING_ALPHA) * smoothedDecibelsRef.current;
-      console.log("(Speaking Volume ) decibels: " + smoothedDecibelsRef.current);
+      const volume = smoothedDecibelsRef.current;
+      // audio recorded, smoothedDecibelsRef.current holds that can be used to detect speech and silence
+      // console.log("( Volume ) decibels: " + volume + " ST: " + SPEAKING_THRESHOLD + " SLT: " + SILENCE_THRESHOLD); 
 
-
-      // --- Hysteresis decision (two thresholds) ---
+      // wasSpeaking is meant to indicate if the user has spoken once
+      // that means if silence is detected, a timer can be started to determine if they've finished speaking
       const wasSpeaking = isCurrentlySpeakingRef.current;
-      const crossedIntoSpeaking =
-        !wasSpeaking && smoothedDecibelsRef.current >= DECIBEL_ON_THRESHOLD;
-      console.log("Crossed Into Speaking?: " + crossedIntoSpeaking)
-      const crossedIntoSilence =
-        wasSpeaking && smoothedDecibelsRef.current < DECIBEL_OFF_THRESHOLD;
-      console.log("Crossed Into Silence?: " + crossedIntoSilence);
 
+      // MUST be distinct thresholds to avoid chatter: SPEAKING_THRESHOLD > SILENCE_THRESHOLD
+      const intoSpeaking =
+        !wasSpeaking && volume >= SPEAKING_THRESHOLD;
+      // if (intoSpeaking) console.log("intoSpeaking: " + intoSpeaking);
 
-      if (crossedIntoSpeaking) {
-        console.log("User is speaking");
+      const intoSilence =
+        wasSpeaking && volume < SILENCE_THRESHOLD && hasEverSpokenRef.current;
+
+      // ── 3) Apply transitions immediately (update CURRENT state first) ─────────────
+      if (intoSpeaking) {
+        // console.log("User started speaking Volume: " + volume);
         isCurrentlySpeakingRef.current = true;
-        millisecondsQuietRef.current = 0;
-        startTimer();
-      } else if (crossedIntoSilence) {
-        console.log("User stopped speaking. checking for how long...");
+        timeUserStoppedSpeaking.current = 0;
+
+        if (!hasEverSpokenRef.current) {
+          hasEverSpokenRef.current = true; // allow silence timing from now on
+          startTimer();
+        }
+        // Start 60s cap ONCE, not on every re-entry
+        if (!segStartRef.current) {
+          segStartRef.current = performance.now();
+        }
+      } else if (intoSilence) {
+        // console.log("User stopped speaking (entered quiet window) volume: " + volume);
         isCurrentlySpeakingRef.current = false;
-        millisecondsQuietRef.current = 0;
+        timeUserStoppedSpeaking.current = 0; // start quiet-hold from zero
       }
 
-      // --- Quiet-hold timing (end-of-utterance) ---
+      // ── 4) Frame delta (clamped to avoid tab-stall jumps) ─────────────────────────
       const nowMs = performance.now();
       const rawDelta = lastFrameTimestampRef.current == null ? 0 : nowMs - lastFrameTimestampRef.current;
-      const deltaMs = Math.min(rawDelta, 250);
+      const deltaMs = Math.min(Math.max(rawDelta, 0), 250);
       lastFrameTimestampRef.current = nowMs;
 
-      if (!isCurrentlySpeakingRef.current) {
-        millisecondsQuietRef.current += deltaMs;
-        console.log("Elapsed time: " + millisecondsQuietRef.current);
-        if (millisecondsQuietRef.current >= QUIET_HOLD_MILLISECONDS) {
-          console.log("Exceeded quiet time");
+      // ── 5) Quiet-hold timing uses the UPDATED state (not wasSpeaking) ─────────────
+      if (!isCurrentlySpeakingRef.current && hasEverSpokenRef.current) {
+        timeUserStoppedSpeaking.current += deltaMs;
+        // console.log("Silence elapsed:", (timeUserStoppedSpeaking.current / 1000).toFixed(2), "s");
+
+        if (timeUserStoppedSpeaking.current >= QUIET_HOLD_MILLISECONDS) {
+          // console.log("Quiet-hold reached; ending utterance");
           stopRecorderIfActive();
           triggerSubmitOnce();
+          resetUtteranceState(); // optional: clear refs for the next utterance
         }
       } else {
-        console.log("Resetting Quiet time, user must have continued speaking")
-        millisecondsQuietRef.current = 0;
+        // If speaking (or before first speech), keep quiet timer at 0
+        timeUserStoppedSpeaking.current = 0;
       }
 
-      console.log("Checking time limit remaining on recording");
-      const liveMs = segStartRef.current ? nowMs - segStartRef.current : 0;
-      if (segStartRef.current && liveMs >= CAP_MS) {
-        console.log("User has exceeded time limit");
+      // ── 6) Hard cap: stop if live duration >= CAP_MS ──────────────────────────────
+      if (segStartRef.current && nowMs - segStartRef.current >= CAP_MS) {
+        // console.log("Time cap reached; ending utterance");
         stopRecorderIfActive();
         triggerSubmitOnce();
+        resetUtteranceState();
       }
+
+      function resetUtteranceState() {
+        isCurrentlySpeakingRef.current = false;
+        hasEverSpokenRef.current = false;
+        timeUserStoppedSpeaking.current = 0;
+        segStartRef.current = null;
+      }
+
 
       const WIDTH = canvas.clientWidth;
       const HEIGHT = canvas.clientHeight;
@@ -294,7 +318,6 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
       ctx.lineTo(WIDTH, HEIGHT / 2);
       ctx.stroke();
     };
-
     draw();
 
     return () => {
@@ -306,6 +329,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
 
 
   const startRecording = async () => {
+    // console.log("Recording Starting")
     if (!requestId.current) {
       requestId.current = uuidv4();
       console.log("New request ID: " + requestId.current);
@@ -315,7 +339,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
       return;
     }
     await initAnalyser();
-
+    mediaRecorderRef.current!.start(250);
     setPhase("listening");
     setIsRecording(true);
   };
@@ -326,7 +350,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
   };
 
   function triggerSubmitOnce() {
-    console.log("Submitting to backend for processing");
+    // console.log("Submitting to backend for processing");
     if (submittingRef.current) return;
     submittingRef.current = true;
     setIsSubmitting(true);
@@ -338,7 +362,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
   }
 
   const handleSubmit = async () => {
-    console.log("Attempting Submit");
+    // console.log("Attempting Submit");
     // TODO: need to configure re-attempt logic
     try {
       setIsSubmitting(true);
@@ -351,25 +375,29 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
         });
       }
 
-      const blob = new Blob(audioChunksRef.current!);
+      const blob = new Blob(audioChunksRef.current!, { type: "audio/webm" });
       const form = new FormData();
       form.append("file", blob, `rec-${Date.now()}.webm`);
       form.append("session_id", sessionId);
       form.append("request_id", requestId.current!);
 
-      const resp = await fetch("/api/recordings", { method: "POST", body: form });
+      const resp = await fetch(process.env.NEXT_PUBLIC_BACKEND_HTTP_URL + "/api/ask", { method: "POST", body: form });
       if (!resp.ok) throw new Error(`upload failed: ${resp.status}`);
 
       audioChunksRef.current = [];
       requestId.current = null;
 
     } catch (err) {
-      console.error(err);
+      // console.error(err);
+      // console.log("Resetting")
+      setIsSubmitting(false);
+      setIsRecording(false);
+      resetTimer();
     } finally {
       setIsSubmitting(false);
       setIsRecording(false);
       resetTimer();
-      setPhase("responding");
+      setPhase("idle");
     }
   };
 

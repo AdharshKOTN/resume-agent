@@ -1,36 +1,49 @@
 // src/lib/socket.ts
 "use client";
-import { io, Socket } from "socket.io-client";
 
-declare global {
-  interface GlobalThis {
-    __appSocket?: Socket;
+let socket: WebSocket | null = null;
+
+export function connectSocket(sessionId: string, onMessage: (msg: any) => void): WebSocket {
+  const wsUrl = process.env.NEXT_PUBLIC_BACKEND_WS_URL + `/api/ws/session/${sessionId}`;
+
+  if (socket) {
+    socket.close();
   }
-}
 
-const URL = process.env.NEXT_PUBLIC_BACKEND_WS_URL ?? "";
+  socket = new WebSocket(wsUrl);
 
-function create(): Socket {
-  return io(URL, {
-    autoConnect: false,
-    transports: ["websocket"],
-    timeout: 10000,
-    reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 4000,
-  });
-}
+  socket.onopen = () => {
+    console.log("✅ WebSocket connected for session", sessionId);
+  };
 
-export function getSocket(): Socket {
-  return ((globalThis as unknown as { __appSocket?: Socket }).__appSocket ??= create());
-}
+  socket.onmessage = (event) => {
+    // console.log(event);
+    const d = event.data;
+    // console.log(typeof d);
+    try {
+      let msg: any;
+      if (typeof (d) === 'string') {
+        msg = JSON.parse(d);
+      }
+      else {
+        console.warn("WD: unknown payload", d)
+        return;
+      }
+      onMessage(msg);
+    } catch (err) {
+      console.error(err)
+      console.error("Failed to parse WS message:", event.data);
+    }
+  };
 
-export function connectSocket(sessionId: string): Socket {
-  const s = getSocket();
-  // attach handshake data before connecting (or reconnecting)
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ((s as any).auth?.session_id !== sessionId) s.auth = { session_id: sessionId };
-  if (!s.connected) s.connect();
-  return s;
+  socket.onclose = () => {
+    // console.log("WebSocket closed");
+    socket = null;
+  };
+
+  socket.onerror = (err) => {
+    console.error("⚠️ WebSocket error", err);
+  };
+
+  return socket;
 }

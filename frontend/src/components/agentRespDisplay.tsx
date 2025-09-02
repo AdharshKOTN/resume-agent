@@ -5,7 +5,7 @@ import {AgentResponse} from "@/components/types"
 
 
 interface AgentRespDisplayProps {
-    responses: AgentResponse[];
+    responses: string[];
 }
 
 export default function AgentRespDisplay({responses}: AgentRespDisplayProps) {
@@ -17,15 +17,13 @@ export default function AgentRespDisplay({responses}: AgentRespDisplayProps) {
             <TableRow>
               <TableHead className="w-[80px]">#</TableHead>
               <TableHead>Agent Responses</TableHead>
-              <TableHead className="w-[100px]">Duration</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {responses.map((res, i) => (
               <TableRow key={i}>
                 <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                <TableCell>{res.text}</TableCell>
-                <TableCell className="text-muted-foreground">{res.duration}s</TableCell>
+                <TableCell>{res}</TableCell>
               </TableRow>
             ))}
           </TableBody>
