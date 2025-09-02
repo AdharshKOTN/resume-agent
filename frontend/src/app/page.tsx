@@ -49,13 +49,6 @@ export default function Home() {
 
   return (
     <>
-      <Head>
-        {/* Tab title */}
-        <title>Adharsh — Interactive Resume Chat</title>
-        {/* Remove favicon (blank) */}
-        <link rel="icon" href="data:," />
-      </Head>
-
       <div className="grid grid-rows-[20px_1fr_20px] min-h-screen p-8 pb-20 gap-16 sm:p-20">
         {/* MAIN */}
         <main className="row-start-2 flex flex-col gap-8 items-start">

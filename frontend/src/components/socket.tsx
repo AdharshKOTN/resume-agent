@@ -11,7 +11,7 @@ export interface WsMessage {
 }
 
 export function connectSocket(sessionId: string, onMessage: (msg: WsMessage) => void): WebSocket {
-  const wsUrl = WS_BASE + `/api/ws/session/${sessionId}`;
+  const wsUrl = WS_BASE().replace(/\/+$/, '') + `/api/ws/session/${sessionId}`;
 
   if (socket) {
     socket.close();
