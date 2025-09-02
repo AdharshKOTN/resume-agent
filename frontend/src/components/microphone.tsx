@@ -388,7 +388,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
       requestId.current = null;
 
     } catch (err) {
-      // console.error(err);
+      console.error(err);
       // console.log("Resetting")
       setIsSubmitting(false);
       setIsRecording(false);

@@ -1,9 +1,6 @@
 "use client";
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from "@/components/ui/table";
 
-import {AgentResponse} from "@/components/types"
-
-
 interface AgentRespDisplayProps {
     responses: string[];
 }

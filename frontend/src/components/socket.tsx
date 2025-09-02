@@ -3,7 +3,13 @@
 
 let socket: WebSocket | null = null;
 
-export function connectSocket(sessionId: string, onMessage: (msg: any) => void): WebSocket {
+export interface WsMessage {
+  agent_response?: string;
+  transcript_result?: string;
+  stage?: string;
+}
+
+export function connectSocket(sessionId: string, onMessage: (msg: WsMessage) => void): WebSocket {
   const wsUrl = process.env.NEXT_PUBLIC_BACKEND_WS_URL + `/api/ws/session/${sessionId}`;
 
   if (socket) {
@@ -21,7 +27,7 @@ export function connectSocket(sessionId: string, onMessage: (msg: any) => void):
     const d = event.data;
     // console.log(typeof d);
     try {
-      let msg: any;
+      let msg: WsMessage;
       if (typeof (d) === 'string') {
         msg = JSON.parse(d);
       }
