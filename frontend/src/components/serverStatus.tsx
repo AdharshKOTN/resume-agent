@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { HTTP_BASE } from "@/lib/env";
 
 type Status = "checking" | "online" | "offline";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_HTTP_URL;
+// const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_HTTP_URL;
 
-if (!BACKEND_URL) {
-  throw new Error(
-    "❌ Environment variable NEXT_PUBLIC_BACKEND_HTTP_URL is not set. " +
-    "Make sure it's provided at build time."
-  );
-}
+// if (!BACKEND_URL) {
+//   throw new Error(
+//     "❌ Environment variable NEXT_PUBLIC_BACKEND_HTTP_URL is not set. " +
+//     "Make sure it's provided at build time."
+//   );
+// }
 
 export default function ServerStatus() {
   const [status, setStatus] = useState<Status>("checking");
@@ -19,7 +20,7 @@ export default function ServerStatus() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/health`, {
+        const response = await fetch(`${HTTP_BASE}/api/health`, {
           cache: "no-store",
         });
         if (response.ok) {

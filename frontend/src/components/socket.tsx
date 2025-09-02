@@ -2,6 +2,7 @@
 "use client";
 
 let socket: WebSocket | null = null;
+import { WS_BASE } from "@/lib/env";
 
 export interface WsMessage {
   agent_response?: string;
@@ -10,7 +11,7 @@ export interface WsMessage {
 }
 
 export function connectSocket(sessionId: string, onMessage: (msg: WsMessage) => void): WebSocket {
-  const wsUrl = process.env.NEXT_PUBLIC_BACKEND_WS_URL + `/api/ws/session/${sessionId}`;
+  const wsUrl = WS_BASE + `/api/ws/session/${sessionId}`;
 
   if (socket) {
     socket.close();
