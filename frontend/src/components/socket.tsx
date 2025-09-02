@@ -2,55 +2,30 @@
 "use client";
 
 let socket: WebSocket | null = null;
-import { WS_BASE } from "@/lib/env";
 
-export interface WsMessage {
-  agent_response?: string;
-  transcript_result?: string;
-  stage?: string;
-}
+type WsMsg = { agent_response?: string; transcript_result?: string; transcript_stage?: string | null };
 
-export function connectSocket(sessionId: string, onMessage: (msg: WsMessage) => void): WebSocket {
-  const wsUrl = WS_BASE().replace(/\/+$/, '') + `/api/ws/session/${sessionId}`;
+export function connectSocket(sessionId: string, onMessage: (msg: WsMsg) => void) {
+  const isDev = process.env.NEXT_PUBLIC_APP_ENV === "dev";
+  const devBase = (process.env.NEXT_PUBLIC_DEV_WS_BASE ?? "ws://127.0.0.1:5000").replace(/\/+$/, "");
 
-  if (socket) {
-    socket.close();
-  }
+  const wsUrl = isDev
+    ? `${devBase}/api/ws/session/${sessionId}`  // e.g. ws://127.0.0.1:5000/api/ws/session/abc
+    : `/api/ws/session/${sessionId}`;          // relative → resolves to ws(s)://<current-host>/...
 
+  if (socket) socket.close();
   socket = new WebSocket(wsUrl);
 
-  socket.onopen = () => {
-    console.log("✅ WebSocket connected for session", sessionId);
-  };
+  socket.onopen = () => console.log("✅ WS connected:", wsUrl);
 
   socket.onmessage = (event) => {
-    // console.log(event);
-    const d = event.data;
-    // console.log(typeof d);
-    try {
-      let msg: WsMessage;
-      if (typeof (d) === 'string') {
-        msg = JSON.parse(d);
-      }
-      else {
-        console.warn("WD: unknown payload", d)
-        return;
-      }
-      onMessage(msg);
-    } catch (err) {
-      console.error(err)
-      console.error("Failed to parse WS message:", event.data);
-    }
+    if (typeof event.data !== "string") return;
+    try { onMessage(JSON.parse(event.data) as WsMsg); }
+    catch (e) { console.error("WS JSON parse failed:", e); }
   };
 
-  socket.onclose = () => {
-    // console.log("WebSocket closed");
-    socket = null;
-  };
+  socket.onclose = () => { socket = null; };
+  socket.onerror  = (err) => console.error("⚠️ WS error", err);
 
-  socket.onerror = (err) => {
-    console.error("⚠️ WebSocket error", err);
-  };
-
-  return socket;
+  return socket!;
 }
