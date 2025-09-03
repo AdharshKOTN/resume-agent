@@ -1,0 +1,9 @@
+session_name: logs
+windows:
+  - window_name: services
+    layout: tiled
+    panes:
+      - tail -f logs/gateway.out
+      - tail -f logs/transcription.out
+      - tail -f logs/personality.out
+      - tail -f logs/worker.out

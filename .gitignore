@@ -63,3 +63,7 @@ backend/app/services/voice/outputs
 
 # gpu-dep lock file
 backend/services/personality/conda-linux-64.lock
+
+# run logs and files backend
+backend/logs
+backend/.pids

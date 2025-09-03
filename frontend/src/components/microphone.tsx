@@ -1,5 +1,6 @@
 "use client";
 
+import { HTTP_BASE } from "@/lib/env";
 import { useState, useRef, useEffect } from "react";
 
 import { v4 as uuidv4 } from "uuid";
@@ -381,7 +382,7 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
       form.append("session_id", sessionId);
       form.append("request_id", requestId.current!);
 
-      const resp = await fetch(process.env.NEXT_PUBLIC_BACKEND_HTTP_URL + "/api/ask", { method: "POST", body: form });
+      const resp = await fetch(HTTP_BASE + "/api/ask", { method: "POST", body: form });
       if (!resp.ok) throw new Error(`upload failed: ${resp.status}`);
 
       audioChunksRef.current = [];
