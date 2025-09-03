@@ -382,7 +382,9 @@ export default function Microphone({ sessionId }: MicrophoneProps) {
       form.append("session_id", sessionId);
       form.append("request_id", requestId.current!);
 
-      const resp = await fetch(HTTP_BASE + "/api/ask", { method: "POST", body: form });
+      console.log("Mic BASE URL: " + HTTP_BASE);
+
+      const resp = await fetch(`${HTTP_BASE}/api/ask`, { method: "POST", body: form });
       if (!resp.ok) throw new Error(`upload failed: ${resp.status}`);
 
       audioChunksRef.current = [];

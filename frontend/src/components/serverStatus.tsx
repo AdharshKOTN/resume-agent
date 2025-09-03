@@ -20,6 +20,8 @@ export default function ServerStatus() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
+        console.log("Health BASE URL: " + HTTP_BASE);
+
         const response = await fetch(`${HTTP_BASE}/api/health`, {
           cache: "no-store",
         });
