@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import InfoPanel from "@/components/infoPanel";
 import AgentRespDisplay from "@/components/agentRespDisplay";
 import Microphone from "@/components/microphone";
 import TranscriptDisplay from "@/components/transcriptDisplay";
@@ -21,76 +22,6 @@ const LinkedInIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M4.98 3.5C4.98 4.88 3.86 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.5 8h4V23h-4V8zm7.5 0h3.84v2.05h.06c.53-1 1.8-2.05 3.7-2.05 3.96 0 4.7 2.6 4.7 5.98V23h-4v-6.6c0-1.57-.03-3.6-2.2-3.6-2.2 0-2.54 1.72-2.54 3.49V23h-4V8z"/>
   </svg>
 );
-
-// --- Local helper: collapsible panel for instructions/examples ---
-function InfoPanel() {
-  const [open, setOpen] = useState(true);
-
-  return (
-    <section
-      aria-label="How to use this interactive resume"
-      className={`w-full transition-all ${open ? "" : "opacity-90"}`}
-    >
-      <div className="rounded-2xl border border-neutral-200 bg-white/60 shadow-sm backdrop-blur p-4 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h2 className="text-lg sm:text-xl font-semibold">How this works</h2>
-            <p className="text-sm text-neutral-600 leading-relaxed">
-              Press the mic, talk, release. I transcribe locally, send text to my agent, and stream the reply back. If the
-              connection drops, check <span className="font-medium">Server Status</span> below and try again.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOpen(!open)}
-            className="shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium hover:bg-neutral-50"
-            aria-expanded={open}
-            aria-controls="info-content"
-          >
-            {open ? "Hide" : "Show"}
-          </button>
-        </div>
-
-        {open && (
-          <div id="info-content" className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border bg-white p-4">
-              <h3 className="text-sm font-semibold">Quick start</h3>
-              <ol className="mt-2 space-y-2 text-sm text-neutral-700 list-decimal list-inside">
-                <li>Check <span className="font-medium">Server Status</span> shows healthy.</li>
-                <li>Click <span className="font-medium">Record</span>, speak clearly near your mic.</li>
-                <li>Pause, then allow for the <span className="font-medium">Silence Detection</span> to send for transcription.</li>
-                <li>Watch <span className="font-medium">Agent Responses</span> stream in.</li>
-              </ol>
-              <p className="mt-3 text-xs text-neutral-500">
-                Tip: On mobile, if live detection struggles, use the fallback recorder to capture and submit.
-              </p>
-            </div>
-
-            <div className="rounded-xl border bg-white p-4">
-              <h3 className="text-sm font-semibold">Ask about</h3>
-              <ul className="mt-2 space-y-2 text-sm text-neutral-700 list-disc list-inside">
-                <li>"Summarize Adharsh's <span className="font-medium">work experience</span>."</li>
-                <li>"What <span className="font-medium">projects</span> has Adharsh built in AI and backend systems?"</li>
-                <li>"Explain his role at <span className="font-medium">IBM</span> and what he accomplished there."</li>
-                <li>"What are some examples of <span className="font-medium">system design</span> problems he has solved?"</li>
-                <li>"What <span className="font-medium">skills and tools</span> does he use most often?"</li>
-              </ul>
-            </div>
-
-            <div className="rounded-xl border bg-white p-4 sm:col-span-2">
-              <h3 className="text-sm font-semibold">What's under the hood</h3>
-              <p className="mt-2 text-sm text-neutral-700">
-                Next.js + TypeScript frontend, FastAPI gateway, Flask microservices for transcription and personality,
-                Ollama-backed LLM, FAISS vector store, and Redis for queues + idempotency. Deployed across a
-                Raspberry Pi edge (Nginx, Cloudflare Tunnel) and a GPU workstation (WSL2) for heavy AI.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
 
 export default function Home() {
   const [responses, setResponses] = useState<string[]>([]);
