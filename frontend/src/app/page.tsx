@@ -69,7 +69,7 @@ function InfoPanel() {
             <div className="rounded-xl border bg-white p-4">
               <h3 className="text-sm font-semibold">Ask about</h3>
               <ul className="mt-2 space-y-2 text-sm text-neutral-700 list-disc list-inside">
-                <li>"Summarize Adharsh’s <span className="font-medium">work experience</span>."</li>
+                <li>"Summarize Adharsh's <span className="font-medium">work experience</span>."</li>
                 <li>"What <span className="font-medium">projects</span> has Adharsh built in AI and backend systems?"</li>
                 <li>"Explain his role at <span className="font-medium">IBM</span> and what he accomplished there."</li>
                 <li>"What are some examples of <span className="font-medium">system design</span> problems he has solved?"</li>
@@ -78,11 +78,11 @@ function InfoPanel() {
             </div>
 
             <div className="rounded-xl border bg-white p-4 sm:col-span-2">
-              <h3 className="text-sm font-semibold">What’s under the hood</h3>
+              <h3 className="text-sm font-semibold">What's under the hood</h3>
               <p className="mt-2 text-sm text-neutral-700">
                 Next.js + TypeScript frontend, FastAPI gateway, Flask microservices for transcription and personality,
                 Ollama-backed LLM, FAISS vector store, and Redis for queues + idempotency. Deployed across a
-                Raspberry Pi edge (Nginx, Cloudflare Tunnel) and a GPU workstation (WSL2) for heavy AI.
+                Raspberry Pi edge (Nginx, Cloudflare Tunnel) and a GPU workstation (WSL2) for heavy AI.
               </p>
             </div>
           </div>
